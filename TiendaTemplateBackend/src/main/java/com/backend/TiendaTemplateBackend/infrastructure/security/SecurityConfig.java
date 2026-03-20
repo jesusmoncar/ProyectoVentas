@@ -38,7 +38,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Login y registro de usuario son públicos
-                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/google").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/google",
+                                "/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
                         // Crear admin solo lo puede hacer un ADMIN
                         .requestMatchers("/api/auth/register-admin").hasRole("ADMIN")
                         // Los productos solo los crea/edita/borra el ADMIN

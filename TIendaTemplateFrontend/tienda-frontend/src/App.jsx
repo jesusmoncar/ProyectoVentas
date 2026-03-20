@@ -11,6 +11,8 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import OrderConfirmation from './pages/OrderConfirmation';
 import AdminOrders from './pages/admin/AdminOrders';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
   return (
@@ -19,6 +21,8 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/admin/products" element={<AdminProducts />} />
         <Route path="/admin/products/new" element={<CreateProduct />} />
         <Route path="/admin/products/:id/edit" element={<EditProduct />} />
