@@ -113,7 +113,7 @@ export default function AdminProducts() {
                                                 <div className="ap-product-thumb"
                                                     style={!p.images?.length ? { background: GRADIENTS[i % GRADIENTS.length] } : {}}>
                                                     {p.images?.length > 0
-                                                        ? <img src={`${BACKEND_URL}${p.images[0]}`} alt={p.name} />
+                                                        ? <img src={p.images[0].startsWith('http') ? p.images[0] : `${BACKEND_URL}${p.images[0]}`} alt={p.name} />
                                                         : <Package size={18} color="rgba(255,255,255,0.7)" />
                                                     }
                                                 </div>

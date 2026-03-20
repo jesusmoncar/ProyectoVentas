@@ -10,6 +10,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
+import com.backend.TiendaTemplateBackend.infrastructure.persistence.entities.ProductVariantEntity;
 
 @Component
 @RequiredArgsConstructor // Inyecta automáticamente el JPA repo y el Mapper
@@ -20,11 +23,33 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public Product save(Product product) {
-        ProductEntity entity = productMapper.toEntity(product);
-        // Aseguramos la relación bidireccional para que JPA guarde bien las variantes
-        if (entity.getVariants() != null) {
-            entity.getVariants().forEach(variant -> variant.setProduct(entity));
+        ProductEntity entity;
+        if (product.getId() != null) {
+            entity = jpaRepository.findById(product.getId()).orElseThrow();
+            entity.setName(product.getName());
+            entity.setDescription(product.getDescription());
+            entity.setBasePrice(product.getBasePrice());
+
+            if (entity.getVariants() != null) {
+                entity.getVariants().clear();
+            } else {
+                entity.setVariants(new ArrayList<>());
+            }
+
+            if (product.getVariants() != null) {
+                List<ProductVariantEntity> paramVariants = product.getVariants().stream()
+                        .map(productMapper::toVariantEntity)
+                        .peek(v -> v.setProduct(entity))
+                        .collect(Collectors.toList());
+                entity.getVariants().addAll(paramVariants);
+            }
+        } else {
+            entity = productMapper.toEntity(product);
+            if (entity.getVariants() != null) {
+                entity.getVariants().forEach(variant -> variant.setProduct(entity));
+            }
         }
+        
         ProductEntity savedEntity = jpaRepository.save(entity);
         return productMapper.toDomain(savedEntity);
     }

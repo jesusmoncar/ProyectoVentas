@@ -349,12 +349,32 @@
     border-radius: 16px;
     overflow: hidden;
     border: 1px solid #e5e7eb;
-    transition: box-shadow 0.2s, transform 0.2s;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    z-index: 1;
 }
 
 .product-card:hover {
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
-    transform: translateY(-3px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12), 0 0 20px rgba(99, 102, 241, 0.2);
+    transform: translateY(-8px) scale(1.02);
+    z-index: 2;
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* Glassmorphism halo glow on hover */
+.product-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.1), transparent 60%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.product-card:hover::before {
+    opacity: 1;
 }
 
 .product-card__banner {
@@ -401,11 +421,11 @@
     display: block;
     padding: 8px;
     box-sizing: border-box;
-    transition: transform 0.3s ease;
+    transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .product-card:hover .product-card__banner-img {
-    transform: scale(1.03);
+    transform: scale(1.1) rotate(-2deg);
 }
 
 .product-card__banner-placeholder {
@@ -542,4 +562,21 @@
     .home-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* Fly to cart animation classes */
+.fly-to-cart-item {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none;
+    transition: transform 0.8s cubic-bezier(0.2, 1, 0.3, 1), 
+                width 0.8s cubic-bezier(0.2, 1, 0.3, 1), 
+                height 0.8s cubic-bezier(0.2, 1, 0.3, 1), 
+                opacity 0.8s cubic-bezier(0.2, 1, 0.3, 1),
+                border-radius 0.8s ease;
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    object-fit: cover;
+    opacity: 0.9;
 }

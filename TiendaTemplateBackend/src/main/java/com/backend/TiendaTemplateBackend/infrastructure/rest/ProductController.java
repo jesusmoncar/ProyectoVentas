@@ -68,12 +68,12 @@ public class ProductController {
     }
 
     // Elimina una imagen específica de un producto
-    @DeleteMapping("/{id}/images/{imageId}")
+    @DeleteMapping("/{id}/images/{filename:.+}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteImage(
             @PathVariable Long id,
-            @PathVariable Long imageId) throws IOException {
-        deleteProductImageUseCase.execute(id, imageId);
+            @PathVariable String filename) throws IOException {
+        deleteProductImageUseCase.execute(id, filename);
         return ResponseEntity.noContent().build();
     }
 }

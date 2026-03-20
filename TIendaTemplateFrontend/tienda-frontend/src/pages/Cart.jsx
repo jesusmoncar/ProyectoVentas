@@ -103,7 +103,7 @@ export default function Cart() {
                                         <div className="cart-item__info">
                                             <div className="cart-item__img-wrap">
                                                 {item.image
-                                                    ? <img src={`${BACKEND_URL}${item.image}`} alt={item.name} className="cart-item__img" />
+                                                    ? <img src={item.image.startsWith('http') ? item.image : `${BACKEND_URL}${item.image}`} alt={item.name} className="cart-item__img" />
                                                     : <div className="cart-item__img-placeholder" style={{ background: GRADIENTS[i % GRADIENTS.length] }}>
                                                         <Package size={20} color="rgba(255,255,255,0.7)" />
                                                       </div>

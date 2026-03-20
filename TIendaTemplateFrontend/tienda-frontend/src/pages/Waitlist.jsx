@@ -129,7 +129,7 @@ export default function Waitlist() {
                                     <div className="wl-card__banner">
                                         {p.images?.length > 0
                                             ? <img
-                                                src={`${BACKEND_URL}${p.images[0]}`}
+                                                src={p.images[0].startsWith('http') ? p.images[0] : `${BACKEND_URL}${p.images[0]}`}
                                                 alt={p.name}
                                                 className="wl-card__img"
                                               />

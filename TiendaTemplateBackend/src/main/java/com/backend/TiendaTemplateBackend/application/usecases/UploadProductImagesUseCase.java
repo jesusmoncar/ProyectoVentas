@@ -12,11 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -25,9 +24,7 @@ public class UploadProductImagesUseCase {
     private final ProductJpaRepository productJpaRepository;
     private final ProductImageJpaRepository productImageJpaRepository;
     private final ProductMapper productMapper;
-
-    @Value("${app.upload.dir}")
-    private String uploadDir;
+    private final Cloudinary cloudinary;
 
     @Transactional
     public Product execute(Long productId, List<MultipartFile> files) throws IOException {
@@ -48,19 +45,15 @@ public class UploadProductImagesUseCase {
             );
         }
 
-        Path uploadPath = Paths.get(uploadDir, "products").toAbsolutePath();
-        Files.createDirectories(uploadPath);
-
         for (MultipartFile file : files) {
-            String extension = getExtension(file.getOriginalFilename());
-            String filename = UUID.randomUUID() + "." + extension;
-
-            Path filePath = uploadPath.resolve(filename);
-            Files.copy(file.getInputStream(), filePath);
+            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.emptyMap());
+            
+            String secureUrl = uploadResult.get("secure_url").toString();
+            String parsedFilename = secureUrl.substring(secureUrl.lastIndexOf('/') + 1);
 
             ProductImageEntity imageEntity = new ProductImageEntity();
-            imageEntity.setFilename(filename);
-            imageEntity.setUrl("/uploads/products/" + filename);
+            imageEntity.setFilename(parsedFilename);
+            imageEntity.setUrl(secureUrl);
             imageEntity.setProduct(productEntity);
             productImageJpaRepository.save(imageEntity);
         }
@@ -70,10 +63,4 @@ public class UploadProductImagesUseCase {
         return productMapper.toDomain(updatedEntity);
     }
 
-    private String getExtension(String filename) {
-        if (filename == null || !filename.contains(".")) {
-            return "jpg";
-        }
-        return filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
-    }
 }

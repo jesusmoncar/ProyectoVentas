@@ -14,31 +14,34 @@ const GRADIENTS = [
 
 export default function ProductModal({ product, gradientIndex = 0, onClose, onAddToCart, addedToCart }) {
     const [imgIndex, setImgIndex] = useState(0);
-    const [selectedVariantIdx, setSelectedVariantIdx] = useState(null);
 
     const images = product?.images ?? [];
     const variants = product?.variants ?? [];
     const hasVariants = variants.length > 0;
 
-    const selectedVariant = selectedVariantIdx !== null ? variants[selectedVariantIdx] : null;
-    const cartKey = selectedVariant
-        ? `${product.id}_v${selectedVariantIdx}`
-        : String(product.id);
+    // Obtener colores únicos
+    const availableColors = Array.from(new Set(variants.map(v => v.color).filter(Boolean)));
+    
+    const [selectedColor, setSelectedColor] = useState(null);
+    const [selectedSize, setSelectedSize] = useState(null);
 
-    const isAdded = addedToCart.has(cartKey);
-
+    // Resetear al cambiar de producto
     useEffect(() => {
         setImgIndex(0);
-        setSelectedVariantIdx(null);
+        if (variants.length > 0) {
+            const colors = Array.from(new Set(variants.map(v => v.color).filter(Boolean)));
+            setSelectedColor(colors.length > 0 ? colors[0] : null);
+            setSelectedSize(null);
+        }
     }, [product]);
 
-    // Lock body scroll
+    // Bloquear scroll del body
     useEffect(() => {
         document.body.style.overflow = 'hidden';
         return () => { document.body.style.overflow = ''; };
     }, []);
 
-    // Close on Escape
+    // Cerrar con Escape
     useEffect(() => {
         const handler = (e) => { if (e.key === 'Escape') onClose(); };
         window.addEventListener('keydown', handler);
@@ -50,16 +53,38 @@ export default function ProductModal({ product, gradientIndex = 0, onClose, onAd
     const prevImg = () => setImgIndex(i => (i - 1 + images.length) % images.length);
     const nextImg = () => setImgIndex(i => (i + 1) % images.length);
 
-    const totalStock = variants.reduce((s, v) => s + (v.stock ?? 0), 0);
+    const totalStock = variants.length > 0 ? variants.reduce((s, v) => s + (v.stock ?? 0), 0) : (product.stock ?? 0);
+
+    // Lógica para encontrar la variante seleccionada
+    // Si no hay colores pero sí tamaños (solo tamaños), selectedColor es null
+    let availableVariantsForSelection = variants;
+    if (availableColors.length > 0) {
+        availableVariantsForSelection = variants.filter(v => v.color === selectedColor);
+    }
+
+    const uncoloredVariants = variants.filter(v => !v.color && v.size); // En caso de que haya variantes sin color
+
+    const isSizeRequired = availableVariantsForSelection.some(v => v.size) || uncoloredVariants.some(v => v.size);
+
+    const selectedVariant = variants.find(v => 
+        (availableColors.length > 0 ? v.color === selectedColor : true) && 
+        (isSizeRequired ? v.size === selectedSize : true)
+    ) || null;
+
+    const selectedVariantIdx = selectedVariant ? variants.indexOf(selectedVariant) : null;
+    const cartKey = selectedVariant ? `${product.id}_v${selectedVariantIdx}` : String(product.id);
+    const isAdded = addedToCart.has(cartKey);
+
     const canAdd = !hasVariants || (selectedVariant && (selectedVariant.stock ?? 0) > 0);
 
-    const handleAdd = () => {
+    const handleAdd = (e) => {
         if (!canAdd) return;
-        onAddToCart(product, selectedVariant, selectedVariantIdx);
+        onAddToCart(product, selectedVariant, selectedVariantIdx, e);
     };
 
     let btnLabel = 'Añadir al carrito';
     if (isAdded) btnLabel = '¡Añadido!';
+    else if (hasVariants && isSizeRequired && !selectedSize) btnLabel = 'Selecciona una talla';
     else if (hasVariants && !selectedVariant) btnLabel = 'Selecciona una variante';
     else if (selectedVariant && (selectedVariant.stock ?? 0) === 0) btnLabel = 'Sin stock';
     else if (!hasVariants && totalStock === 0) btnLabel = 'Sin stock';
@@ -76,7 +101,7 @@ export default function ProductModal({ product, gradientIndex = 0, onClose, onAd
                     {images.length > 0 ? (
                         <>
                             <img
-                                src={`${BACKEND_URL}${images[imgIndex]}`}
+                                src={images[imgIndex].startsWith('http') ? images[imgIndex] : `${BACKEND_URL}${images[imgIndex]}`}
                                 alt={product.name}
                                 className="pm-image"
                             />
@@ -121,48 +146,79 @@ export default function ProductModal({ product, gradientIndex = 0, onClose, onAd
                         <p className="pm-desc">{product.description}</p>
                     )}
 
-                    {/* Stock badge */}
-                    <div className="pm-meta">
-                        <span className={`pm-stock-badge ${totalStock === 0 ? 'pm-stock-badge--out' : ''}`}>
-                            {totalStock === 0 ? 'Sin stock' : `${totalStock} en stock`}
-                        </span>
-                    </div>
+                    {/* Meta (Stock total si no hay variantes) */}
+                    {!hasVariants && (
+                        <div className="pm-meta">
+                            <span className={`pm-stock-badge ${totalStock === 0 ? 'pm-stock-badge--out' : ''}`}>
+                                {totalStock === 0 ? 'Sin stock' : `${totalStock} en stock`}
+                            </span>
+                        </div>
+                    )}
 
-                    {/* Variants */}
+                    {/* Variantes separadas por Color y Talla */}
                     {hasVariants && (
                         <div className="pm-section">
-                            <p className="pm-section__label">
-                                Elige variante
-                                {!selectedVariant && <span className="pm-section__required"> — obligatorio</span>}
-                            </p>
-                            <div className="pm-variants">
-                                {variants.map((v, idx) => {
-                                    const outOfStock = (v.stock ?? 0) === 0;
-                                    const isSelected = selectedVariantIdx === idx;
-                                    return (
-                                        <button
-                                            key={idx}
-                                            className={`pm-variant-btn ${isSelected ? 'pm-variant-btn--selected' : ''} ${outOfStock ? 'pm-variant-btn--out' : ''}`}
-                                            onClick={() => !outOfStock && setSelectedVariantIdx(isSelected ? null : idx)}
-                                            disabled={outOfStock}
-                                            title={outOfStock ? 'Sin stock' : undefined}
-                                        >
-                                            {v.color && (
-                                                <span
-                                                    className="pm-variant-color"
-                                                    style={{ background: v.color.toLowerCase() }}
+                            
+                            {/* Grupo: Color */}
+                            {availableColors.length > 0 && (
+                                <div className="pm-option-group">
+                                    <p className="pm-section__label">
+                                        Color: <span style={{ color: '#111827', fontWeight: 600, textTransform: 'capitalize' }}>{selectedColor}</span>
+                                    </p>
+                                    <div className="pm-color-list">
+                                        {availableColors.map(color => {
+                                            const isSelected = color === selectedColor;
+                                            return (
+                                                <button
+                                                    key={color}
+                                                    className={`pm-color-btn ${isSelected ? 'pm-color-btn--active' : ''}`}
+                                                    style={{ background: color.toLowerCase() }}
+                                                    onClick={() => {
+                                                        setSelectedColor(color);
+                                                        setSelectedSize(null); // Resetea la talla al cambiar de color
+                                                    }}
+                                                    title={color}
                                                 />
-                                            )}
-                                            <span className="pm-variant-label">
-                                                {[v.color, v.size].filter(Boolean).join(' / ') || `Variante ${idx + 1}`}
-                                            </span>
-                                            <span className={`pm-variant-stock ${outOfStock ? 'pm-variant-stock--out' : ''}`}>
-                                                {outOfStock ? 'Agotado' : `${v.stock} uds`}
-                                            </span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Grupo: Tallas */}
+                            {isSizeRequired && (
+                                <div className="pm-option-group">
+                                    <p className="pm-section__label">
+                                        Talla
+                                        {!selectedSize && <span className="pm-section__required"> — obligatorio</span>}
+                                    </p>
+                                    <div className="pm-size-list">
+                                        {(availableColors.length > 0 ? availableVariantsForSelection : uncoloredVariants).map(v => {
+                                            const outOfStock = (v.stock ?? 0) === 0;
+                                            const isSelected = v.size === selectedSize;
+                                            return (
+                                                <button
+                                                    key={v.size || v.id}
+                                                    className={`pm-size-btn ${isSelected ? 'pm-size-btn--active' : ''} ${outOfStock ? 'pm-size-btn--out' : ''}`}
+                                                    onClick={() => !outOfStock && setSelectedSize(isSelected ? null : v.size)}
+                                                    disabled={outOfStock}
+                                                >
+                                                    {v.size}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Mostrar el stock de la variante seleccionada o indicar si está agotada */}
+                            {selectedVariant && (
+                                <div className="pm-meta" style={{ marginTop: '4px' }}>
+                                    <span className={`pm-stock-badge ${(selectedVariant.stock ?? 0) === 0 ? 'pm-stock-badge--out' : ''}`}>
+                                        {(selectedVariant.stock ?? 0) === 0 ? 'Variante agotada' : `${selectedVariant.stock} uds en stock`}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     )}
 

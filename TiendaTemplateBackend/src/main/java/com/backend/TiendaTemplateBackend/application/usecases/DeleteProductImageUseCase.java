@@ -7,26 +7,26 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 
 @Service
 @RequiredArgsConstructor
 public class DeleteProductImageUseCase {
 
     private final ProductImageJpaRepository productImageJpaRepository;
-
-    @Value("${app.upload.dir}")
-    private String uploadDir;
+    private final Cloudinary cloudinary;
 
     @Transactional
-    public void execute(Long productId, Long imageId) throws IOException {
-        var imageEntity = productImageJpaRepository.findByIdAndProductId(imageId, productId)
-                .orElseThrow(() -> new RuntimeException("Imagen no encontrada con id: " + imageId));
+    public void execute(Long productId, String filename) throws IOException {
+        var imageEntity = productImageJpaRepository.findByFilenameAndProductId(filename, productId)
+                .orElseThrow(() -> new RuntimeException("Imagen no encontrada con archivo: " + filename));
 
-        Path filePath = Paths.get(uploadDir, "products", imageEntity.getFilename());
-        Files.deleteIfExists(filePath);
+        String publicId = imageEntity.getFilename();
+        if (publicId.contains(".")) {
+            publicId = publicId.substring(0, publicId.lastIndexOf('.'));
+        }
+        cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
 
         productImageJpaRepository.delete(imageEntity);
     }

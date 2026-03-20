@@ -62,6 +62,15 @@ export default function CreateProduct() {
 
     const addVariant = () => setVariants(prev => [...prev, emptyVariant()]);
 
+    const duplicateVariant = (index) => {
+        const toDup = variants[index];
+        setVariants(prev => {
+            const newArray = [...prev];
+            newArray.splice(index + 1, 0, { ...toDup, size: '', stock: '' });
+            return newArray;
+        });
+    };
+
     const removeVariant = (index) => {
         if (variants.length === 1) return;
         setVariants(prev => prev.filter((_, i) => i !== index));
@@ -248,9 +257,24 @@ export default function CreateProduct() {
                                     <span className="cp-variant-row__num">{i + 1}</span>
                                     <div className="cp-variant-fields">
                                         <div className="cp-field">
-                                            <label className="cp-label">Color</label>
-                                            <input type="text" className="cp-input" placeholder="Rojo"
-                                                value={v.color} onChange={e => updateVariant(i, 'color', e.target.value)} />
+                                            <label className="cp-label">Color (Hex)</label>
+                                            <div className="cp-color-picker">
+                                                <input 
+                                                    type="color" 
+                                                    className="cp-color-input" 
+                                                    title="Elegir color"
+                                                    value={v.color || '#000000'} 
+                                                    onChange={e => updateVariant(i, 'color', e.target.value)} 
+                                                />
+                                                <input 
+                                                    type="text" 
+                                                    className="cp-input cp-input--hex" 
+                                                    placeholder="#000000"
+                                                    value={v.color} 
+                                                    onChange={e => updateVariant(i, 'color', e.target.value)} 
+                                                    maxLength={7}
+                                                />
+                                            </div>
                                         </div>
                                         <div className="cp-field">
                                             <label className="cp-label">Talla</label>
@@ -269,10 +293,16 @@ export default function CreateProduct() {
                                                 min="0" step="0.01" />
                                         </div>
                                     </div>
-                                    <button type="button" className="cp-variant-row__remove"
-                                        onClick={() => removeVariant(i)} disabled={variants.length === 1}>
-                                        <Trash2 size={16} />
-                                    </button>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingBottom: '2px' }}>
+                                        <button type="button" className="cp-variant-row__act cp-variant-row__act--dup"
+                                            onClick={() => duplicateVariant(i)} title="Duplicar color para añadir otra talla">
+                                            <Plus size={16} />
+                                        </button>
+                                        <button type="button" className="cp-variant-row__act cp-variant-row__act--del"
+                                            onClick={() => removeVariant(i)} disabled={variants.length === 1} title="Borrar variante">
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>

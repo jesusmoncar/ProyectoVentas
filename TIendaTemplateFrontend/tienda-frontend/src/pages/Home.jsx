@@ -41,8 +41,40 @@ export default function Home() {
     const [selectedProductIndex, setSelectedProductIndex] = useState(0);
 
     const [addedToCart, setAddedToCart] = useState(new Set());
+    const [flyingItems, setFlyingItems] = useState([]);
 
-    const handleAddToCart = (product, variant = null, variantIdx = null) => {
+    const triggerFlyAnimation = (e) => {
+        if (!e) return;
+        const card = e.currentTarget.closest('.product-card') || e.currentTarget.closest('.product-modal__content');
+        if (!card) return;
+        
+        const imgEl = card.querySelector('.product-card__banner-img') || card.querySelector('img');
+        if (!imgEl) return;
+        
+        const startRect = imgEl.getBoundingClientRect();
+        const cartIcon = document.querySelector('.navbar__icon-btn--cart');
+        const endRect = cartIcon 
+            ? cartIcon.getBoundingClientRect() 
+            : { top: 20, left: window.innerWidth - 60, width: 24, height: 24 };
+
+        const newItem = {
+            id: Date.now() + Math.random(),
+            src: imgEl.src,
+            startRect,
+            endRect
+        };
+
+        setFlyingItems(prev => [...prev, newItem]);
+
+        // Remove the item after animation completes (matches CSS 0.8s)
+        setTimeout(() => {
+            setFlyingItems(prev => prev.filter(i => i.id !== newItem.id));
+        }, 850);
+    };
+
+    const handleAddToCart = (product, e = null, variant = null, variantIdx = null) => {
+        if (e) triggerFlyAnimation(e);
+        
         const cartKey = variant != null ? `${product.id}_v${variantIdx}` : String(product.id);
         const variantLabel = variant ? [variant.color, variant.size].filter(Boolean).join(' / ') : null;
         try {
@@ -248,12 +280,12 @@ export default function Home() {
                                     <div className="product-card__banner">
                                         {p.images?.length > 0
                                             ? <img
-                                                src={`${BACKEND_URL}${p.images[0]}`}
+                                                src={p.images[0].startsWith('http') ? p.images[0] : `${BACKEND_URL}${p.images[0]}`}
                                                 alt={p.name}
                                                 className="product-card__banner-img"
                                               />
                                             : <div
-                                                className="product-card__banner-placeholder"
+                                                className="product-card__banner-placeholder product-card__banner-img"
                                                 style={{ background: GRADIENTS[i % GRADIENTS.length] }}
                                               >
                                                 <Package size={36} color="rgba(255,255,255,0.7)" />
@@ -296,7 +328,7 @@ export default function Home() {
                                         </div>
                                         <button
                                             className={`product-card__cart-btn ${addedToCart.has(p.id) ? 'product-card__cart-btn--added' : ''}`}
-                                            onClick={() => handleAddToCart(p)}
+                                            onClick={(e) => handleAddToCart(p, e)}
                                         >
                                             <ShoppingCart size={15} />
                                             {addedToCart.has(p.id) ? '¡Añadido!' : 'Añadir al carrito'}
@@ -316,10 +348,43 @@ export default function Home() {
                     product={selectedProduct}
                     gradientIndex={selectedProductIndex}
                     onClose={() => setSelectedProduct(null)}
-                    onAddToCart={handleAddToCart}
+                    onAddToCart={(p, variant, variantIdx, event) => handleAddToCart(p, event, variant, variantIdx)}
                     addedToCart={addedToCart}
                 />
             )}
+
+            {/* Render flying cart items globally over the page */}
+            {flyingItems.map(item => (
+                <img 
+                    key={item.id}
+                    src={item.src}
+                    alt=""
+                    className="fly-to-cart-item"
+                    // To animate from start to end accurately, we apply inline styles to set initial position,
+                    // and use a setTimeout hack inside useEffect/ref to trigger CSS layout and set end position.
+                    ref={(el) => {
+                        if (el && !el.dataset.animated) {
+                            el.dataset.animated = 'true';
+                            // Start position
+                            el.style.top = `${item.startRect.top}px`;
+                            el.style.left = `${item.startRect.left}px`;
+                            el.style.width = `${item.startRect.width}px`;
+                            el.style.height = `${item.startRect.height}px`;
+                            
+                            // Force reflow
+                            void el.offsetWidth;
+                            
+                            // Target position (cart icon)
+                            el.style.top = `${item.endRect.top}px`;
+                            el.style.left = `${item.endRect.left}px`;
+                            el.style.width = `20px`;
+                            el.style.height = `20px`;
+                            el.style.opacity = '0';
+                            el.style.transform = 'scale(0.2)';
+                        }
+                    }}
+                />
+            ))}
         </div>
     );
 }

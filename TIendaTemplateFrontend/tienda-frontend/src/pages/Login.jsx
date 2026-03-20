@@ -1,10 +1,15 @@
 import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
+import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import { ShoppingBag, Mail, Lock, Loader2, Eye, EyeOff, ArrowRight, AlertCircle, Sparkles, TrendingUp, Package } from 'lucide-react';
 import './Login.css';
 
 export default function Login() {
+    const { login } = useAuth();
+    const navigate = useNavigate();
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -17,9 +22,9 @@ export default function Login() {
         setLoading(true);
         try {
             const res = await api.post('/auth/login', { email, password });
-            localStorage.setItem('token', res.data.token);
-            window.location.href = '/';
-        } catch (err) {
+            login(res.data.token);
+            navigate('/');
+        } catch {
             setError('Credenciales incorrectas. Inténtalo de nuevo.');
         } finally {
             setLoading(false);
@@ -34,8 +39,8 @@ export default function Login() {
             setError('');
             try {
                 const res = await api.post('/auth/google', { accessToken: tokenResponse.access_token });
-                localStorage.setItem('token', res.data.token);
-                window.location.href = '/';
+                login(res.data.token);
+                navigate('/');
             } catch {
                 setError('No se pudo iniciar sesión con Google. Inténtalo de nuevo.');
             } finally {
@@ -196,10 +201,10 @@ export default function Login() {
                     <div className="login-footer-links">
                         <p>
                             ¿No tienes cuenta?{' '}
-                            <a href="/register">Regístrate gratis</a>
+                            <Link to="/register">Regístrate gratis</Link>
                         </p>
                         <p>
-                            <a href="/forgot-password">¿Olvidaste tu contraseña?</a>
+                            <Link to="/forgot-password">¿Olvidaste tu contraseña?</Link>
                         </p>
                     </div>
 

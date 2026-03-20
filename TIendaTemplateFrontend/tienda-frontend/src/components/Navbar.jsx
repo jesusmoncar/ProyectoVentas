@@ -1,22 +1,12 @@
 import { useState, useEffect } from 'react';
-import { ShoppingBag, LogOut, User, Menu, X, ShoppingCart, Heart, Package, ClipboardList } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { ShoppingBag, User, LogOut, Menu, X, ShoppingCart, Heart, Package, ClipboardList } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import './Navbar.css';
 
-function parseToken(token) {
-    try {
-        const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-        return JSON.parse(atob(base64));
-    } catch {
-        return null;
-    }
-}
-
 export default function Navbar() {
-    const token = localStorage.getItem('token');
-    const payload = token ? parseToken(token) : null;
-    const isLoggedIn = !!payload;
-    const email = payload?.sub ?? null;
-    const isAdmin = payload?.roles?.includes('ROLE_ADMIN') ?? false;
+    const { isLoggedIn, user, logout } = useAuth();
+    const navigate = useNavigate();
     const [menuOpen, setMenuOpen] = useState(false);
     const [cartCount, setCartCount] = useState(() => {
         try { return JSON.parse(localStorage.getItem('cart') ?? '[]').reduce((s, x) => s + x.quantity, 0); }
@@ -33,52 +23,54 @@ export default function Navbar() {
     }, []);
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        window.location.href = '/';
+        logout();
+        navigate('/');
     };
+
+    const displayName = user?.nombre || user?.email || '';
 
     return (
         <nav className="navbar">
             <div className="navbar__inner">
 
-                <a href="/" className="navbar__logo">
+                <Link to="/" className="navbar__logo">
                     <div className="navbar__logo-icon">
                         <ShoppingBag size={20} color="white" strokeWidth={1.8} />
                     </div>
                     <span className="navbar__logo-name">MiTienda</span>
-                </a>
+                </Link>
 
                 <div className="navbar__links">
-                    <a href="/" className="navbar__link navbar__link--active">Inicio</a>
-                    <a href="/" className="navbar__link">Productos</a>
-                    {isAdmin && (
+                    <Link to="/" className="navbar__link navbar__link--active">Inicio</Link>
+                    <Link to="/" className="navbar__link">Productos</Link>
+                    {user?.isAdmin && (
                         <>
-                            <a href="/admin/products" className="navbar__link navbar__link--admin">
+                            <Link to="/admin/products" className="navbar__link navbar__link--admin">
                                 <Package size={14} />
                                 Gestión productos
-                            </a>
-                            <a href="/admin/orders" className="navbar__link navbar__link--admin">
+                            </Link>
+                            <Link to="/admin/orders" className="navbar__link navbar__link--admin">
                                 <ClipboardList size={14} />
                                 Gestión pedidos
-                            </a>
+                            </Link>
                         </>
                     )}
                 </div>
 
                 <div className="navbar__actions">
-                    <a href="/waitlist" className="navbar__icon-btn navbar__icon-btn--waitlist" title="Lista de espera">
+                    <Link to="/waitlist" className="navbar__icon-btn navbar__icon-btn--waitlist" title="Lista de espera">
                         <Heart size={20} />
-                    </a>
-                    <a href="/cart" className="navbar__icon-btn navbar__icon-btn--cart" title="Carrito">
+                    </Link>
+                    <Link to="/cart" className="navbar__icon-btn navbar__icon-btn--cart" title="Carrito">
                         <ShoppingCart size={20} />
                         {cartCount > 0 && <span className="navbar__cart-badge">{cartCount}</span>}
-                    </a>
+                    </Link>
 
                     {isLoggedIn ? (
                         <>
                             <div className="navbar__user">
                                 <User size={15} />
-                                <span>{email}</span>
+                                <span>{displayName}</span>
                             </div>
                             <button className="navbar__btn navbar__btn--outline" onClick={handleLogout}>
                                 <LogOut size={15} />
@@ -87,8 +79,8 @@ export default function Navbar() {
                         </>
                     ) : (
                         <>
-                            <a href="/login" className="navbar__btn navbar__btn--ghost">Iniciar sesión</a>
-                            <a href="/register" className="navbar__btn navbar__btn--primary">Registrarse</a>
+                            <Link to="/login" className="navbar__btn navbar__btn--ghost">Iniciar sesión</Link>
+                            <Link to="/register" className="navbar__btn navbar__btn--primary">Registrarse</Link>
                         </>
                     )}
                 </div>
@@ -100,34 +92,34 @@ export default function Navbar() {
 
             {menuOpen && (
                 <div className="navbar__mobile-menu">
-                    <a href="/" className="navbar__mobile-link">Inicio</a>
-                    <a href="/" className="navbar__mobile-link">Productos</a>
-                    <a href="/waitlist" className="navbar__mobile-link">Lista de espera</a>
-                    <a href="/cart" className="navbar__mobile-link">Carrito</a>
-                    {isAdmin && (
+                    <Link to="/" className="navbar__mobile-link" onClick={() => setMenuOpen(false)}>Inicio</Link>
+                    <Link to="/" className="navbar__mobile-link" onClick={() => setMenuOpen(false)}>Productos</Link>
+                    <Link to="/waitlist" className="navbar__mobile-link" onClick={() => setMenuOpen(false)}>Lista de espera</Link>
+                    <Link to="/cart" className="navbar__mobile-link" onClick={() => setMenuOpen(false)}>Carrito</Link>
+                    {user?.isAdmin && (
                         <>
                             <div className="navbar__mobile-divider" />
                             <span className="navbar__mobile-section">Admin</span>
-                            <a href="/admin/products" className="navbar__mobile-link navbar__mobile-link--admin">
+                            <Link to="/admin/products" className="navbar__mobile-link navbar__mobile-link--admin" onClick={() => setMenuOpen(false)}>
                                 Gestión de productos
-                            </a>
-                            <a href="/admin/orders" className="navbar__mobile-link navbar__mobile-link--admin">
+                            </Link>
+                            <Link to="/admin/orders" className="navbar__mobile-link navbar__mobile-link--admin" onClick={() => setMenuOpen(false)}>
                                 Gestión de pedidos
-                            </a>
+                            </Link>
                         </>
                     )}
                     <div className="navbar__mobile-divider" />
                     {isLoggedIn ? (
                         <>
-                            <span className="navbar__mobile-user">{email}</span>
+                            <span className="navbar__mobile-user">{displayName}</span>
                             <button className="navbar__mobile-link navbar__mobile-link--danger" onClick={handleLogout}>
                                 Cerrar sesión
                             </button>
                         </>
                     ) : (
                         <>
-                            <a href="/login" className="navbar__mobile-link">Iniciar sesión</a>
-                            <a href="/register" className="navbar__mobile-link navbar__mobile-link--primary">Registrarse</a>
+                            <Link to="/login" className="navbar__mobile-link" onClick={() => setMenuOpen(false)}>Iniciar sesión</Link>
+                            <Link to="/register" className="navbar__mobile-link navbar__mobile-link--primary" onClick={() => setMenuOpen(false)}>Registrarse</Link>
                         </>
                     )}
                 </div>

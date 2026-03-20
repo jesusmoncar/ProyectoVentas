@@ -12,5 +12,7 @@ public interface ProductImageJpaRepository extends JpaRepository<ProductImageEnt
 
     Optional<ProductImageEntity> findByIdAndProductId(Long id, Long productId);
 
+    Optional<ProductImageEntity> findByFilenameAndProductId(String filename, Long productId);
+
     int countByProductId(Long productId);
 }
