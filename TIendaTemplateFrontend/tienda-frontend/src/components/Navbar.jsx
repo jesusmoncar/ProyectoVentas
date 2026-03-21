@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ShoppingBag, User, LogOut, Menu, X, ShoppingCart, Heart, Package, ClipboardList } from 'lucide-react';
+import { ShoppingBag, User, LogOut, Menu, X, ShoppingCart, Heart, Package, ClipboardList, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import './Navbar.css';
 
@@ -42,7 +42,9 @@ export default function Navbar() {
 
                 <div className="navbar__links">
                     <Link to="/" className="navbar__link navbar__link--active">Inicio</Link>
-                    <Link to="/" className="navbar__link">Productos</Link>
+                    {isLoggedIn && (
+                        <Link to="/my-orders" className="navbar__link">Mis pedidos</Link>
+                    )}
                     {user?.isAdmin && (
                         <>
                             <Link to="/admin/products" className="navbar__link navbar__link--admin">
@@ -52,6 +54,10 @@ export default function Navbar() {
                             <Link to="/admin/orders" className="navbar__link navbar__link--admin">
                                 <ClipboardList size={14} />
                                 Gestión pedidos
+                            </Link>
+                            <Link to="/admin/incidencias" className="navbar__link navbar__link--admin">
+                                <AlertTriangle size={14} />
+                                Incidencias
                             </Link>
                         </>
                     )}
@@ -93,7 +99,9 @@ export default function Navbar() {
             {menuOpen && (
                 <div className="navbar__mobile-menu">
                     <Link to="/" className="navbar__mobile-link" onClick={() => setMenuOpen(false)}>Inicio</Link>
-                    <Link to="/" className="navbar__mobile-link" onClick={() => setMenuOpen(false)}>Productos</Link>
+                    {isLoggedIn && (
+                        <Link to="/my-orders" className="navbar__mobile-link" onClick={() => setMenuOpen(false)}>Mis pedidos</Link>
+                    )}
                     <Link to="/waitlist" className="navbar__mobile-link" onClick={() => setMenuOpen(false)}>Lista de espera</Link>
                     <Link to="/cart" className="navbar__mobile-link" onClick={() => setMenuOpen(false)}>Carrito</Link>
                     {user?.isAdmin && (
@@ -105,6 +113,9 @@ export default function Navbar() {
                             </Link>
                             <Link to="/admin/orders" className="navbar__mobile-link navbar__mobile-link--admin" onClick={() => setMenuOpen(false)}>
                                 Gestión de pedidos
+                            </Link>
+                            <Link to="/admin/incidencias" className="navbar__mobile-link navbar__mobile-link--admin" onClick={() => setMenuOpen(false)}>
+                                Incidencias / Devoluciones
                             </Link>
                         </>
                     )}

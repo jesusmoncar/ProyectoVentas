@@ -10,7 +10,9 @@ import Waitlist from './pages/Waitlist';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import OrderConfirmation from './pages/OrderConfirmation';
+import MyOrders from './pages/MyOrders';
 import AdminOrders from './pages/admin/AdminOrders';
+import AdminIncidencias from './pages/admin/AdminIncidencias';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import PrivateRoute from './components/PrivateRoute';
@@ -35,6 +37,9 @@ function App() {
         <Route path="/order-confirmation/:numeroPedido" element={
           <PrivateRoute><OrderConfirmation /></PrivateRoute>
         } />
+        <Route path="/my-orders" element={
+          <PrivateRoute><MyOrders /></PrivateRoute>
+        } />
 
         {/* ── Rutas de Admin (requieren ROLE_ADMIN) ── */}
         <Route path="/admin/products" element={
@@ -48,6 +53,9 @@ function App() {
         } />
         <Route path="/admin/orders" element={
           <PrivateRoute role="ADMIN"><AdminOrders /></PrivateRoute>
+        } />
+        <Route path="/admin/incidencias" element={
+          <PrivateRoute role="ADMIN"><AdminIncidencias /></PrivateRoute>
         } />
       </Routes>
     </BrowserRouter>

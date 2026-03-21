@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Search, SlidersHorizontal, Package, ChevronDown, X, Heart, ShoppingCart } from 'lucide-react';
+import { Search, SlidersHorizontal, Package, ChevronDown, X, Heart } from 'lucide-react';
 import api, { BACKEND_URL } from '../api/axios';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -326,13 +326,6 @@ export default function Home() {
                                             )}
                                             <button className="product-card__btn" onClick={() => { setSelectedProduct(p); setSelectedProductIndex(i); }}>Ver producto</button>
                                         </div>
-                                        <button
-                                            className={`product-card__cart-btn ${addedToCart.has(p.id) ? 'product-card__cart-btn--added' : ''}`}
-                                            onClick={(e) => handleAddToCart(p, e)}
-                                        >
-                                            <ShoppingCart size={15} />
-                                            {addedToCart.has(p.id) ? '¡Añadido!' : 'Añadir al carrito'}
-                                        </button>
                                     </div>
                                 </div>
                             ))}

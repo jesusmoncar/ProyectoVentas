@@ -3,6 +3,7 @@ package com.backend.TiendaTemplateBackend.domain.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -34,8 +35,15 @@ public class Order {
 
     private LocalDateTime orderDate;
     private Double totalAmount;
-    private String status; //PENDING, PAID, SHIPPED
+    private String status;
     private String shippingAddress;
+    private String motivoDevolucion;
+    private String motivoRechazo;
+
+    @JsonProperty("clienteEmail")
+    public String getClienteEmail() {
+        return user != null ? user.getEmail() : null;
+    }
 
     @PrePersist
     private void generateNumeroPedido() {
