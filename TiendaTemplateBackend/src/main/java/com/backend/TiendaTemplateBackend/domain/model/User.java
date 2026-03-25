@@ -33,6 +33,12 @@ public class User {
 
     private String direccion;
 
+    @Column(columnDefinition = "TEXT")
+    private String cartData;
+
+    @Column(columnDefinition = "TEXT")
+    private String wishlistData;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "users_roles",

@@ -46,6 +46,13 @@ export default function Waitlist() {
     const [error, setError] = useState('');
     const [addedIds, setAddedIds] = useState(new Set());
 
+    // Sincronizar wishlist cuando el login la carga desde la BD
+    useEffect(() => {
+        const sync = () => setWaitlistIds(getWaitlist());
+        window.addEventListener('wishlistUpdated', sync);
+        return () => window.removeEventListener('wishlistUpdated', sync);
+    }, []);
+
     useEffect(() => {
         api.get('/products')
             .then(res => setProducts(res.data))

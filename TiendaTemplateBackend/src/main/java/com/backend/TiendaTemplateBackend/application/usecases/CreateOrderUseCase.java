@@ -30,8 +30,9 @@ public class CreateOrderUseCase {
         Order order = new Order();
         order.setUser(user);
         order.setOrderDate(LocalDateTime.now());
-        order.setStatus("PENDING");
+        order.setStatus(request.getPaymentIntentId() != null ? "PAID" : "PENDING");
         order.setShippingAddress(request.getShippingAddress());
+        order.setStripePaymentIntentId(request.getPaymentIntentId());
 
         double total = 0;
         for (OrderRequest.OrderItemRequest itemReq : request.getItems()) {

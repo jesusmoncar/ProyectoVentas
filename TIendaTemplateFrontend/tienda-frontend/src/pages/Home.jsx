@@ -29,6 +29,16 @@ export default function Home() {
         catch { return []; }
     });
 
+    // Sincronizar wishlist cuando el login la carga desde la BD
+    useEffect(() => {
+        const sync = () => {
+            try { setWaitlist(JSON.parse(localStorage.getItem('waitlist') ?? '[]')); }
+            catch { /* ignore */ }
+        };
+        window.addEventListener('wishlistUpdated', sync);
+        return () => window.removeEventListener('wishlistUpdated', sync);
+    }, []);
+
     const toggleWaitlist = (id) => {
         setWaitlist(prev => {
             const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];

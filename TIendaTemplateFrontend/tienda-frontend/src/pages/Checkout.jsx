@@ -1,9 +1,14 @@
 import { useState } from 'react';
-import { MapPin, Edit2, CheckCircle, ShoppingBag, ArrowLeft, Lock, Loader2 } from 'lucide-react';
+import { MapPin, Edit2, CheckCircle, ShoppingBag, ArrowLeft, Lock, Loader2, CreditCard } from 'lucide-react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
 import api from '../api/axios';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import CheckoutForm from './CheckoutForm';
 import './Checkout.css';
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 const EMPTY_FORM = {
     nombre: '', telefono: '', direccion: '', puerta: '',
@@ -56,36 +61,19 @@ export default function Checkout() {
 
     const [paying, setPaying] = useState(false);
     const [payError, setPayError] = useState('');
+    const [clientSecret, setClientSecret] = useState('');
 
-    const handlePay = async () => {
+    const handleInitPayment = async () => {
         if (!addressConfirmed) return;
         setPaying(true);
         setPayError('');
         try {
-            const addressStr = [
-                savedAddress.nombre,
-                savedAddress.direccion,
-                savedAddress.puerta,
-                `${savedAddress.cp} ${savedAddress.ciudad}`,
-                savedAddress.provincia,
-                savedAddress.pais,
-                `Tel: ${savedAddress.telefono}`,
-            ].filter(Boolean).join(', ');
-
-            const orderItems = items.map(x => ({
-                productId: x.productId ?? x.id,
-                quantity: x.quantity,
-                ...(x.variantLabel ? { variantLabel: x.variantLabel } : {}),
-            }));
-            const res = await api.post('/orders', { shippingAddress: addressStr, items: orderItems });
-
-            localStorage.removeItem('cart');
-            window.dispatchEvent(new Event('cartUpdated'));
-            window.location.href = `/order-confirmation/${res.data.numeroPedido}`;
+            const res = await api.post('/payments/create-intent', { amount: total, currency: 'eur' });
+            setClientSecret(res.data.clientSecret);
         } catch (err) {
-            const status = err.response?.status;
-            const msg = err.response?.data?.message ?? err.response?.data?.error ?? err.message;
-            setPayError(`Error ${status ? `(${status})` : ''}: ${msg ?? 'No se pudo procesar el pedido.'}`);
+            const msg = err.response?.data?.message ?? err.message;
+            setPayError(`No se pudo iniciar el pago: ${msg}`);
+        } finally {
             setPaying(false);
         }
     };
@@ -244,37 +232,45 @@ export default function Checkout() {
                         {/* ── Step 2: Payment ── */}
                         <section className={`co-section ${!addressConfirmed ? 'co-section--locked' : ''}`}>
                             <div className="co-section__head">
-                                <div className={`co-step-badge ${addressConfirmed ? 'co-step-badge--active' : ''}`}>
-                                    2
+                                <div className={`co-step-badge ${addressConfirmed && !clientSecret ? 'co-step-badge--active' : addressConfirmed && clientSecret ? 'co-step-badge--done' : ''}`}>
+                                    {addressConfirmed && clientSecret ? <CheckCircle size={16} /> : '2'}
                                 </div>
                                 <h2 className="co-section__title">Pago</h2>
                             </div>
 
                             <div className="co-payment">
-                                <p className="co-payment__desc">
-                                    Serás redirigido a nuestra pasarela de pago segura para completar la compra.
-                                </p>
-
-                                <div className="co-payment__methods">
-                                    <span className="co-method-badge">Visa</span>
-                                    <span className="co-method-badge">Mastercard</span>
-                                    <span className="co-method-badge">PayPal</span>
-                                    <span className="co-method-badge">Apple Pay</span>
-                                    <span className="co-method-badge">Google Pay</span>
-                                </div>
-
-                                {payError && <p className="co-pay-error">{payError}</p>}
-
-                                <button
-                                    className="co-pay-btn"
-                                    disabled={!addressConfirmed || paying}
-                                    onClick={handlePay}
-                                >
-                                    {paying
-                                        ? <><Loader2 size={17} className="co-spin" /> Procesando pedido...</>
-                                        : <><Lock size={17} /> Confirmar y pagar · {total.toFixed(2)} €</>
-                                    }
-                                </button>
+                                {!clientSecret ? (
+                                    <>
+                                        <p className="co-payment__desc">
+                                            Pago seguro con tarjeta a través de Stripe. Tus datos están cifrados y protegidos.
+                                        </p>
+                                        <div className="co-payment__methods">
+                                            <span className="co-method-badge">Visa</span>
+                                            <span className="co-method-badge">Mastercard</span>
+                                            <span className="co-method-badge">Amex</span>
+                                        </div>
+                                        {payError && <p className="co-pay-error">{payError}</p>}
+                                        <button
+                                            className="co-pay-btn"
+                                            disabled={!addressConfirmed || paying}
+                                            onClick={handleInitPayment}
+                                        >
+                                            {paying
+                                                ? <><Loader2 size={17} className="co-spin" /> Preparando pago...</>
+                                                : <><CreditCard size={17} /> Proceder al pago · {total.toFixed(2)} €</>
+                                            }
+                                        </button>
+                                    </>
+                                ) : (
+                                    <Elements stripe={stripePromise}>
+                                        <CheckoutForm
+                                            clientSecret={clientSecret}
+                                            total={total}
+                                            addressData={savedAddress}
+                                            cartItems={items}
+                                        />
+                                    </Elements>
+                                )}
 
                                 <p className="co-payment__ssl">
                                     <Lock size={11} /> Pago cifrado con SSL — tus datos están protegidos

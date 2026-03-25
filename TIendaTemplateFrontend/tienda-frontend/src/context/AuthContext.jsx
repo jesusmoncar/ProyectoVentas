@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback } from 'react';
+import { fetchSavedData, persistCart, persistWishlist, mergeCart, mergeWishlist } from '../api/userDataApi';
 
 const AuthContext = createContext(null);
 
@@ -29,16 +30,45 @@ export function AuthProvider({ children }) {
         return t ? buildUser(t) : null;
     });
 
-    const login = useCallback((newToken) => {
+    const login = useCallback(async (newToken) => {
         localStorage.setItem('token', newToken);
         setToken(newToken);
         setUser(buildUser(newToken));
+
+        // Traer carrito y wishlist guardados en BD y fusionar con lo que haya en local
+        try {
+            const remote = await fetchSavedData();
+            const localCart     = JSON.parse(localStorage.getItem('cart')     || '[]');
+            const localWishlist = JSON.parse(localStorage.getItem('waitlist') || '[]');
+            const cart     = mergeCart(localCart, remote.cart);
+            const wishlist = mergeWishlist(localWishlist, remote.wishlist);
+            localStorage.setItem('cart',     JSON.stringify(cart));
+            localStorage.setItem('waitlist', JSON.stringify(wishlist));
+            window.dispatchEvent(new Event('cartUpdated'));
+            window.dispatchEvent(new Event('wishlistUpdated'));
+        } catch {
+            // Si falla la sincronización mantenemos lo que hay en local
+        }
     }, []);
 
-    const logout = useCallback(() => {
+    const logout = useCallback(async () => {
+        // Guardar carrito y wishlist en BD antes de limpiar
+        try {
+            const cart     = JSON.parse(localStorage.getItem('cart')     || '[]');
+            const wishlist = JSON.parse(localStorage.getItem('waitlist') || '[]');
+            await Promise.all([persistCart(cart), persistWishlist(wishlist)]);
+        } catch {
+            // No bloqueamos el logout si falla el guardado
+        }
+
         localStorage.removeItem('token');
+        localStorage.removeItem('cart');
+        localStorage.removeItem('waitlist');
+        localStorage.removeItem('shippingAddress');
         setToken(null);
         setUser(null);
+        window.dispatchEvent(new Event('cartUpdated'));
+        window.dispatchEvent(new Event('wishlistUpdated'));
     }, []);
 
     return (
