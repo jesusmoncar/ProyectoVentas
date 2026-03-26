@@ -40,6 +40,9 @@ public class Order {
     private String motivoDevolucion;
     private String motivoRechazo;
     private String stripePaymentIntentId;
+    private String deliveryMode;
+    private String trackingNumber;
+    private String labelUrl;
 
     @JsonProperty("clienteEmail")
     public String getClienteEmail() {

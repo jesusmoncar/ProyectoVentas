@@ -8,6 +8,9 @@ import com.stripe.param.PaymentIntentCreateParams;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.stripe.model.Refund;
+import com.stripe.param.RefundCreateParams;
+
 @Service
 public class StripePaymentAdapter implements PaymentService {
 
@@ -26,6 +29,20 @@ public class StripePaymentAdapter implements PaymentService {
             return intent.getClientSecret();
         } catch (StripeException e) {
             throw new RuntimeException("Error con Stripe: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void refundPayment(String paymentIntentId, Double amountToRefund) {
+        Stripe.apiKey = secretKey;
+        try {
+            RefundCreateParams params = RefundCreateParams.builder()
+                    .setPaymentIntent(paymentIntentId)
+                    .setAmount((long) (amountToRefund * 100))
+                    .build();
+            Refund.create(params);
+        } catch (StripeException e) {
+            throw new RuntimeException("Error procesando reembolso en Stripe: " + e.getMessage());
         }
     }
 }

@@ -12,4 +12,7 @@ public interface OrderJpaRepository extends JpaRepository<Order, Long> {
     Optional<Order> findByNumeroPedido(String numeroPedido);
     List<Order> findByUserEmail(String email);
     List<Order> findByStatusIn(List<String> statuses);
+    
+    // Buscar ordenes por estado y fecha anterior a...
+    List<Order> findByStatusAndOrderDateBefore(String status, java.time.LocalDateTime date);
 }

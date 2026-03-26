@@ -2,6 +2,7 @@ package com.backend.TiendaTemplateBackend.application.usecases;
 
 import com.backend.TiendaTemplateBackend.domain.model.Order;
 import com.backend.TiendaTemplateBackend.domain.repository.OrderRepository;
+import com.backend.TiendaTemplateBackend.domain.repository.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 public class AprobarDevolucionUseCase {
 
     private final OrderRepository orderRepository;
+    private final PaymentService paymentService;
 
     public Order execute(Long id) {
         Order order = orderRepository.findById(id)
@@ -19,7 +21,16 @@ public class AprobarDevolucionUseCase {
             throw new RuntimeException("El pedido no tiene una solicitud de devolución pendiente");
         }
 
-        order.setStatus("RETURN_APPROVED");
+        // Automatic Stripe Refund with management fee
+        if (order.getStripePaymentIntentId() != null && !order.getStripePaymentIntentId().isEmpty()) {
+            double managementFee = 2.00;
+            double amountToRefund = order.getTotalAmount() - managementFee;
+            if (amountToRefund > 0) {
+                paymentService.refundPayment(order.getStripePaymentIntentId(), amountToRefund);
+            }
+        }
+
+        order.setStatus("RETURNED");
         return orderRepository.save(order);
     }
 }

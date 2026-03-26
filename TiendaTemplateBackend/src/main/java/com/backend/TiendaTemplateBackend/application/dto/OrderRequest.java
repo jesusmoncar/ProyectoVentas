@@ -10,6 +10,7 @@ public class OrderRequest {
     private String shippingAddress;
     private List<OrderItemRequest> items;
     private String paymentIntentId;
+    private String deliveryMode; // ej: "SHIPPING" o "PICKUP"
 
     @Data
     public static  class OrderItemRequest {

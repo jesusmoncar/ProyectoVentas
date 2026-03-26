@@ -50,6 +50,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                         // Las imágenes subidas son accesibles públicamente
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                        .requestMatchers("/api/sandbox/sendcloud/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/orderes/**").authenticated()
                         .anyRequest().authenticated()
                 )

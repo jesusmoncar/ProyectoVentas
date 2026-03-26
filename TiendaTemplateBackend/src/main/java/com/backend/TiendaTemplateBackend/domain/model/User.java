@@ -33,10 +33,10 @@ public class User {
 
     private String direccion;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "text")
     private String cartData;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "text")
     private String wishlistData;
 
     @ManyToMany(fetch = FetchType.EAGER)
