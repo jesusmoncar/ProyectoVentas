@@ -65,6 +65,9 @@ export default function ProductCard({ product, index = 0 }: Props) {
           {product.variants.some(v => v.stock <= 3 && v.stock > 0) && (
             <span className="product-card__badge product-card__badge--limited">¡Últimas!</span>
           )}
+          {product.discountPercent !== undefined && product.discountPercent > 0 && (
+            <span className="product-card__badge product-card__badge--discount">-{product.discountPercent}%</span>
+          )}
         </div>
 
         <div className="product-card__info">
@@ -87,7 +90,16 @@ export default function ProductCard({ product, index = 0 }: Props) {
           )}
 
           <div className="product-card__price-row">
-            <span className="product-card__price">€{product.basePrice.toFixed(2)}</span>
+            {product.discountPercent !== undefined && product.discountPercent > 0 ? (
+              <>
+                <span className="product-card__price product-card__price--discount">
+                  €{(product.basePrice * (1 - product.discountPercent / 100)).toFixed(2)}
+                </span>
+                <span className="product-card__price-old">€{product.basePrice.toFixed(2)}</span>
+              </>
+            ) : (
+              <span className="product-card__price">€{product.basePrice.toFixed(2)}</span>
+            )}
           </div>
         </div>
       </Link>

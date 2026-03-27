@@ -9,6 +9,7 @@ public class ProductResponse {
     private String name;
     private String description;
     private Double basePrice;
+    private Integer discountPercent;
     private List<ProductVariantResponse> variants;
     private List<String> images;
 }

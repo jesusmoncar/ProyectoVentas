@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiSearch, FiFilter, FiX, FiChevronDown } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiX, FiChevronDown, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import api from '../api/api';
 import ProductCard from '../components/ProductCard';
 import type { Product } from '../types';
@@ -13,6 +13,8 @@ export default function CatalogPage() {
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
 
   useEffect(() => {
     api.get<Product[]>('/products')
@@ -41,6 +43,13 @@ export default function CatalogPage() {
         default: return 0;
       }
     });
+
+  // Pagination
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginatedProducts = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  // Reset page when filters change
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, selectedColors, selectedSizes, priceRange, sortBy]);
 
   const toggleColor = (color: string) => {
     setSelectedColors(prev => prev.includes(color) ? prev.filter(c => c !== color) : [...prev, color]);
@@ -176,11 +185,43 @@ export default function CatalogPage() {
           ))}
         </div>
       ) : filtered.length > 0 ? (
-        <div className="products-grid">
-          {filtered.map((product, index) => (
-            <ProductCard key={product.id} product={product} index={index} />
-          ))}
-        </div>
+        <>
+          <div className="products-grid">
+            {paginatedProducts.map((product, index) => (
+              <ProductCard key={product.id} product={product} index={index} />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="admin__pagination" style={{ marginBottom: '40px' }}>
+              <button 
+                className="admin__pagination-btn" 
+                disabled={currentPage === 1}
+                onClick={() => { setCurrentPage(prev => prev - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              >
+                <FiChevronLeft size={18} />
+              </button>
+              
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  className={`admin__pagination-btn ${currentPage === page ? 'admin__pagination-btn--active' : ''}`}
+                  onClick={() => { setCurrentPage(page); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                >
+                  {page}
+                </button>
+              ))}
+
+              <button 
+                className="admin__pagination-btn" 
+                disabled={currentPage === totalPages}
+                onClick={() => { setCurrentPage(prev => prev + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              >
+                <FiChevronRight size={18} />
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <div className="empty-state">
           <div className="empty-state__icon">🔍</div>

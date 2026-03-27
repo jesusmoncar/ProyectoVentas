@@ -17,12 +17,67 @@ const statusOptions = [
   { value: 'RETURN_REJECTED', label: 'Devol. Rechazada', icon: FiX, color: '#FFCDD2', textColor: '#C62828' }
 ];
 
+const SHIPPING_STEPS = [
+  { value: 'PAID', label: 'Pagado' },
+  { value: 'PROCESSING', label: 'Preparando' },
+  { value: 'SHIPPED', label: 'Enviado' },
+  { value: 'DELIVERED', label: 'Entregado' }
+];
+
+const PICKUP_STEPS = [
+  { value: 'RESERVED', label: 'Reservado' },
+  { value: 'PROCESSING', label: 'Preparando' },
+  { value: 'DELIVERED', label: 'Recogido' }
+];
+
+function OrderStatusStepper({ 
+  currentStatus, 
+  deliveryMode, 
+  onStatusChange 
+}: { 
+  currentStatus: string, 
+  deliveryMode: string, 
+  onStatusChange: (s: string) => void 
+}) {
+  const isPickup = deliveryMode === 'PICKUP';
+  const steps = isPickup ? PICKUP_STEPS : SHIPPING_STEPS;
+  
+  const currentIndex = steps.findIndex(s => s.value === currentStatus);
+  
+  return (
+    <div className="admin__status-stepper">
+      <div className="admin__stepper-line"></div>
+      {steps.map((step, idx) => {
+        const isCompleted = idx < currentIndex;
+        const isCurrent = idx === currentIndex;
+        const statusClass = isCompleted ? 'admin__stepper-step--completed' : isCurrent ? 'admin__stepper-step--current' : '';
+        
+        return (
+          <div 
+            key={step.value} 
+            className={`admin__stepper-step ${statusClass}`}
+            onClick={() => onStatusChange(step.value)}
+            title={`Cambiar a ${step.label}`}
+          >
+            <div className="admin__stepper-dot"></div>
+            <span className="admin__stepper-label">{step.label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function AdminOrdersPage() {
   const [activeTab, setActiveTab] = useState<'orders' | 'returns'>('orders');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterDeliveryMode, setFilterDeliveryMode] = useState<'ALL' | 'PICKUP' | 'SHIPPING'>('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+  
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -64,6 +119,7 @@ export default function AdminOrdersPage() {
       const matchSearch = o.numeroPedido?.toLowerCase().includes(search.toLowerCase()) ||
                           o.shippingAddress?.toLowerCase().includes(search.toLowerCase());
       const matchStatus = !filterStatus || o.status === filterStatus;
+      const matchDelivery = filterDeliveryMode === 'ALL' || o.deliveryMode === filterDeliveryMode;
       
       const orderDate = new Date(o.orderDate || o.createdAt || 0);
       orderDate.setHours(0, 0, 0, 0);
@@ -81,9 +137,13 @@ export default function AdminOrdersPage() {
         if (orderTime > end.getTime()) matchDate = false;
       }
       
-      return matchSearch && matchStatus && matchDate;
+      return matchSearch && matchStatus && matchDate && matchDelivery;
     })
     .sort((a, b) => new Date(b.orderDate || b.createdAt || 0).getTime() - new Date(a.orderDate || a.createdAt || 0).getTime());
+
+  // Pagination slicing
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginatedOrders = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleStatusChange = async (orderId: number, newStatus: string) => {
     try {
@@ -140,7 +200,7 @@ export default function AdminOrdersPage() {
     const s = statusOptions.find(o => o.value === status);
     if (!s) return <span className="admin__status-badge">{status}</span>;
     return (
-      <span className="admin__status-badge" style={{ background: s.color, color: s.textColor }}>
+      <span className="admin__status-badge" style={{ background: s.color, color: s.textColor, fontSize: '0.7rem', padding: '2px 8px' }}>
         {getStatusLabel(status, deliveryMode, address)}
       </span>
     );
@@ -181,23 +241,43 @@ export default function AdminOrdersPage() {
 
       {activeTab === 'orders' && (
         <div className="admin__stats">
-          <div className="admin__stat-card" style={{ borderLeftColor: 'var(--pastel-pink)' }}>
+          <div 
+            className={`admin__stat-card ${filterStatus === '' ? 'admin__stat-card--active' : ''}`} 
+            style={{ borderLeftColor: 'var(--pastel-pink)' }}
+            onClick={() => { setFilterStatus(''); setCurrentPage(1); }}
+          >
             <span className="admin__stat-number">{stats.total}</span>
             <span className="admin__stat-label">Total Pedidos</span>
           </div>
-          <div className="admin__stat-card" style={{ borderLeftColor: '#F0D080' }}>
+          <div 
+            className={`admin__stat-card ${filterStatus === 'PENDING' ? 'admin__stat-card--active' : ''}`} 
+            style={{ borderLeftColor: '#F0D080' }}
+            onClick={() => { setFilterStatus('PENDING'); setCurrentPage(1); }}
+          >
             <span className="admin__stat-number">{stats.pending}</span>
             <span className="admin__stat-label">Esperando Pago</span>
           </div>
-          <div className="admin__stat-card" style={{ borderLeftColor: '#80CAFF' }}>
+          <div 
+            className={`admin__stat-card ${filterStatus === 'PROCESSING' ? 'admin__stat-card--active' : ''}`} 
+            style={{ borderLeftColor: '#80CAFF' }}
+            onClick={() => { setFilterStatus('PROCESSING'); setCurrentPage(1); }}
+          >
             <span className="admin__stat-number">{stats.processing}</span>
             <span className="admin__stat-label">En Preparación</span>
           </div>
-          <div className="admin__stat-card" style={{ borderLeftColor: '#B39DDB' }}>
+          <div 
+            className={`admin__stat-card ${filterStatus === 'SHIPPED' ? 'admin__stat-card--active' : ''}`} 
+            style={{ borderLeftColor: '#B39DDB' }}
+            onClick={() => { setFilterStatus('SHIPPED'); setCurrentPage(1); }}
+          >
             <span className="admin__stat-number">{stats.shipped}</span>
             <span className="admin__stat-label">En Camino</span>
           </div>
-          <div className="admin__stat-card" style={{ borderLeftColor: '#90D8B8' }}>
+          <div 
+            className={`admin__stat-card ${filterStatus === 'DELIVERED' ? 'admin__stat-card--active' : ''}`} 
+            style={{ borderLeftColor: '#90D8B8' }}
+            onClick={() => { setFilterStatus('DELIVERED'); setCurrentPage(1); }}
+          >
             <span className="admin__stat-number">{stats.delivered}</span>
             <span className="admin__stat-label">Completados</span>
           </div>
@@ -208,7 +288,27 @@ export default function AdminOrdersPage() {
       <div className="admin__toolbar">
         <div className="catalog__search">
           <FiSearch size={18} />
-          <input placeholder="Buscar por nº pedido o dirección..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input placeholder="Buscar nº pedido..." value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} />
+        </div>
+        <div className="admin__delivery-toggle">
+          <button 
+            className={`admin__toggle-btn all ${filterDeliveryMode === 'ALL' ? 'admin__toggle-btn--active' : ''}`}
+            onClick={() => { setFilterDeliveryMode('ALL'); setCurrentPage(1); }}
+          >
+            Todos
+          </button>
+          <button 
+            className={`admin__toggle-btn pickup ${filterDeliveryMode === 'PICKUP' ? 'admin__toggle-btn--active' : ''}`}
+            onClick={() => { setFilterDeliveryMode('PICKUP'); setCurrentPage(1); }}
+          >
+            🏢 Recogida
+          </button>
+          <button 
+            className={`admin__toggle-btn shipping ${filterDeliveryMode === 'SHIPPING' ? 'admin__toggle-btn--active' : ''}`}
+            onClick={() => { setFilterDeliveryMode('SHIPPING'); setCurrentPage(1); }}
+          >
+            🚚 Envío Web
+          </button>
         </div>
         <div className="admin__toolbar-filters">
             <select className="admin__filter-select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
@@ -251,14 +351,21 @@ export default function AdminOrdersPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(order => (
-                <tr key={order.id}>
-                  <td>
-                    <div className="admin__order-info">
-                      <strong className="admin__order-number">#{order.numeroPedido}</strong>
-                      <span className="admin__items-qty">{order.items?.length || 0} artículos</span>
-                    </div>
-                  </td>
+              {paginatedOrders.map(order => (
+                  <tr key={order.id} className={order.deliveryMode === 'PICKUP' ? 'admin__row--pickup' : 'admin__row--shipping'}>
+                   <td>
+                     <div className="admin__order-info">
+                       <div style={{ display: 'flex', alignItems: 'center' }}>
+                         {order.deliveryMode === 'PICKUP' ? (
+                           <span className="admin__delivery-icon admin__delivery-icon--pickup" title="Recogida en Tienda">🏬</span>
+                         ) : (
+                           <span className="admin__delivery-icon admin__delivery-icon--shipping" title="Envío a Domicilio">🚚</span>
+                         )}
+                         <strong className="admin__order-number">#{order.numeroPedido}</strong>
+                       </div>
+                       <span className="admin__items-qty">{order.items?.length || 0} artículos</span>
+                     </div>
+                   </td>
                   <td>{formatDate(order.orderDate || order.createdAt || '')}</td>
                   <td>
                     <div className="admin__customer-info">
@@ -280,24 +387,25 @@ export default function AdminOrdersPage() {
                        </div>
                     ) : (
                       <div className="admin__status-control">
-                        {getStatusBadge(order.status, order.deliveryMode, order.shippingAddress)}
-                        <select
-                          className="admin__select--inline"
-                          value={order.status}
-                          disabled={order.status === 'RETURNED'}
-                          onChange={e => handleStatusChange(order.id, e.target.value)}
-                        >
-                          {statusOptions
-                            .filter(opt => {
-                              const isPickup = order.deliveryMode === 'PICKUP' || order.shippingAddress?.includes('Tienda BLOOM');
-                              if (isPickup && opt.value === 'SHIPPED') return false;
-                              if (!isPickup && opt.value === 'RESERVED') return false;
-                              return true;
-                            })
-                            .map(s => (
-                              <option key={s.value} value={s.value}>Cambiar a {getStatusLabel(s.value, order.deliveryMode, order.shippingAddress)}</option>
+                        <OrderStatusStepper 
+                          currentStatus={order.status} 
+                          deliveryMode={order.deliveryMode || ''} 
+                          onStatusChange={(s) => handleStatusChange(order.id, s)}
+                        />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                          {getStatusBadge(order.status, order.deliveryMode, order.shippingAddress)}
+                          <select
+                            className="admin__select--interactive"
+                            value={order.status}
+                            disabled={order.status === 'RETURNED'}
+                            onChange={e => handleStatusChange(order.id, e.target.value)}
+                          >
+                            <option value="" disabled>Acciones rápidas...</option>
+                            {statusOptions.map(s => (
+                              <option key={s.value} value={s.value}>Forzar a {s.label}</option>
                             ))}
-                        </select>
+                          </select>
+                        </div>
                       </div>
                     )}
                   </td>
@@ -322,6 +430,30 @@ export default function AdminOrdersPage() {
               ))}
             </tbody>
           </table>
+          
+          {totalPages > 1 && (
+            <div className="admin__pagination">
+              <button 
+                className="admin__pagination-btn" 
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+              >
+                &larr;
+              </button>
+              
+              <div className="admin__pagination-info">
+                Página <strong>{currentPage}</strong> de {totalPages}
+              </div>
+
+              <button 
+                className="admin__pagination-btn" 
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+              >
+                &rarr;
+              </button>
+            </div>
+          )}
         </div>
       )}
 

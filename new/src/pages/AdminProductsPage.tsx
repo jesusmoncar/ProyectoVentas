@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiImage, FiSearch, FiPackage, FiArrowLeft } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiImage, FiSearch, FiPackage, FiArrowLeft, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import api, { getImageUrl } from '../api/api';
 import type { Product } from '../types';
@@ -9,11 +9,12 @@ interface ProductForm {
   name: string;
   description: string;
   basePrice: string;
+  discountPercent: string;
   variants: { color: string; size: string; stock: string; priceOverride: string }[];
 }
 
 const emptyForm: ProductForm = {
-  name: '', description: '', basePrice: '',
+  name: '', description: '', basePrice: '', discountPercent: '0',
   variants: [{ color: '', size: '', stock: '', priceOverride: '' }]
 };
 
@@ -26,6 +27,10 @@ export default function AdminProductsPage() {
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: number; name: string } | null>(null);
+  const [globalDiscountShow, setGlobalDiscountShow] = useState(false);
+  const [globalDiscountValue, setGlobalDiscountValue] = useState('0');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
 
   const fetchProducts = () => {
     api.get<Product[]>('/products')
@@ -40,6 +45,9 @@ export default function AdminProductsPage() {
     p.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginatedProducts = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   const openCreate = () => {
     setForm(emptyForm); setEditingId(null); setShowForm(true);
   };
@@ -49,6 +57,7 @@ export default function AdminProductsPage() {
       name: product.name,
       description: product.description || '',
       basePrice: String(product.basePrice),
+      discountPercent: String(product.discountPercent || 0),
       variants: product.variants.length > 0
         ? product.variants.map(v => ({
             color: v.color || '', size: v.size || '',
@@ -83,6 +92,7 @@ export default function AdminProductsPage() {
       name: form.name,
       description: form.description,
       basePrice: parseFloat(form.basePrice),
+      discountPercent: parseInt(form.discountPercent) || 0,
       variants: form.variants
         .filter(v => v.size || v.color)
         .map(v => ({
@@ -107,6 +117,17 @@ export default function AdminProductsPage() {
       toast.error(err.response?.data?.message || 'Error al guardar');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleGlobalDiscount = async () => {
+    try {
+      await api.put(`/products/discount/global?percent=${globalDiscountValue}`);
+      toast.success('Descuento global aplicado correctamente');
+      setGlobalDiscountShow(false);
+      fetchProducts();
+    } catch {
+      toast.error('Error al aplicar el descuento global');
     }
   };
 
@@ -143,16 +164,21 @@ export default function AdminProductsPage() {
           <Link to="/" className="admin__back"><FiArrowLeft size={18} /> Volver a la tienda</Link>
           <h1><FiPackage size={28} /> Gestión de Productos</h1>
         </div>
-        <button className="btn btn--primary" onClick={openCreate}>
-          <FiPlus size={18} /> Nuevo Producto
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button className="btn btn--secondary" onClick={() => setGlobalDiscountShow(true)}>
+            Descuento Global
+          </button>
+          <button className="btn btn--primary" onClick={openCreate}>
+            <FiPlus size={18} /> Nuevo Producto
+          </button>
+        </div>
       </div>
 
       {/* Search */}
       <div className="admin__toolbar">
         <div className="catalog__search">
           <FiSearch size={18} />
-          <input placeholder="Buscar productos..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input placeholder="Buscar productos..." value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} />
         </div>
         <span className="admin__count">{filtered.length} producto{filtered.length !== 1 ? 's' : ''}</span>
       </div>
@@ -178,8 +204,11 @@ export default function AdminProductsPage() {
                 />
               </div>
               <div className="admin__form-group">
-                <label className="admin__form-label">Precio Base (€) *</label>
                 <input className="admin__form-input" type="number" step="0.01" placeholder="29.99" value={form.basePrice} onChange={e => setForm(f => ({ ...f, basePrice: e.target.value }))} />
+              </div>
+              <div className="admin__form-group">
+                <label className="admin__form-label">Descuento (%)</label>
+                <input className="admin__form-input" type="number" min="0" max="100" placeholder="0" value={form.discountPercent} onChange={e => setForm(f => ({ ...f, discountPercent: e.target.value }))} />
               </div>
 
               <div className="admin__variants-section">
@@ -248,14 +277,15 @@ export default function AdminProductsPage() {
               <tr>
                 <th>Imagen</th>
                 <th>Producto</th>
-                <th>Precio</th>
+                <th>Precio Base</th>
+                <th>Descuento</th>
                 <th>Variantes</th>
                 <th>Stock Total</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map(product => {
+              {paginatedProducts.map(product => {
                 const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
                 const imageUrl = getImageUrl(product.images?.[0], product.id);
                 return (
@@ -269,7 +299,18 @@ export default function AdminProductsPage() {
                       <strong>{product.name}</strong>
                       <span className="admin__product-desc">{product.description?.substring(0, 60)}</span>
                     </td>
-                    <td><strong>€{(product.basePrice || 0).toFixed(2)}</strong></td>
+                    <td>
+                      <strong>€{(product.basePrice || 0).toFixed(2)}</strong>
+                    </td>
+                    <td>
+                      {product.discountPercent && product.discountPercent > 0 ? (
+                        <span className="product-card__badge product-card__badge--discount" style={{ position: 'relative', top: 0, left: 0 }}>
+                          -{product.discountPercent}%
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)' }}>-</span>
+                      )}
+                    </td>
                     <td>{product.variants.length}</td>
                     <td>
                       <span className={`admin__stock ${totalStock <= 5 ? 'admin__stock--low' : ''}`}>
@@ -296,6 +337,36 @@ export default function AdminProductsPage() {
               })}
             </tbody>
           </table>
+
+          {totalPages > 1 && (
+            <div className="admin__pagination">
+              <button 
+                className="admin__pagination-btn" 
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+              >
+                <FiChevronLeft size={18} />
+              </button>
+              
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  className={`admin__pagination-btn ${currentPage === page ? 'admin__pagination-btn--active' : ''}`}
+                  onClick={() => setCurrentPage(page)}
+                >
+                  {page}
+                </button>
+              ))}
+
+              <button 
+                className="admin__pagination-btn" 
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+              >
+                <FiChevronRight size={18} />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -313,6 +384,34 @@ export default function AdminProductsPage() {
               <button className="admin__btn-cancel" onClick={() => setDeleteConfirm(null)}>Cancelar</button>
               <button className="admin__btn-submit" style={{ background: '#FF5252' }} onClick={handleDelete}>
                 Eliminar Permanentemente
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Global Discount Modal */}
+      {globalDiscountShow && (
+        <div className="admin__modal-overlay" onClick={() => setGlobalDiscountShow(false)}>
+          <div className="admin__modal" onClick={e => e.stopPropagation()}>
+            <h2>Aplicar Descuento Global</h2>
+            <p style={{ marginBottom: '20px', color: 'var(--text-muted)' }}>
+              Esta acción aplicará el porcentaje de descuento indicado a <strong>TODOS</strong> los productos del catálogo.
+            </p>
+            <div className="admin__form-group">
+              <label className="admin__form-label">Porcentaje de Descuento (%)</label>
+              <input 
+                className="admin__form-input" 
+                type="number" 
+                min="0" 
+                max="100" 
+                value={globalDiscountValue} 
+                onChange={e => setGlobalDiscountValue(e.target.value)} 
+              />
+            </div>
+            <div className="admin__form-actions">
+              <button className="admin__btn-cancel" onClick={() => setGlobalDiscountShow(false)}>Cancelar</button>
+              <button className="admin__btn-submit" onClick={handleGlobalDiscount}>
+                Aplicar a Todo el Catálogo
               </button>
             </div>
           </div>

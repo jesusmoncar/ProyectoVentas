@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 
 import com.backend.TiendaTemplateBackend.infrastructure.sendcloud.SendcloudService;
 import com.backend.TiendaTemplateBackend.infrastructure.sendcloud.SendcloudParcelRequest;
+import com.backend.TiendaTemplateBackend.infrastructure.notification.TelegramService;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +26,7 @@ public class CreateOrderUseCase {
     private final ProductJpaRepository productJpaRepository;
     private final UserRepository userRepository;
     private final SendcloudService sendcloudService;
+    private final TelegramService telegramService;
 
     @Transactional
     public Order execute(OrderRequest request, String userEmail) {
@@ -119,7 +121,7 @@ public class CreateOrderUseCase {
                         .city(city)
                         .postal_code(postalCode)
                         .country("ES")
-                        .weight("1.5")
+                        .weight("2")
                         .request_label(false)
                         .shipping_method(2190)
                         .build();
@@ -149,6 +151,14 @@ public class CreateOrderUseCase {
                 System.err.println("Fallo al crear envío en Sendcloud para el pedido " + savedOrder.getId() + ": " + e.getMessage());
                 // No lanzamos excepcion para no reventar el flujo del usuario y que pierda su pedido pagado
             }
+        }
+
+        // Notify via Telegram (async-like, as it's separate from the main transaction success if needed, 
+        // but here it's called at the end of the @Transactional method).
+        try {
+            telegramService.sendOrderNotification(savedOrder);
+        } catch (Exception e) {
+            System.err.println("Error triggering Telegram notification: " + e.getMessage());
         }
 
         return savedOrder;

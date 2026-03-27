@@ -25,6 +25,7 @@ public class CreateProductUseCase {
         product.setName(request.getName());
         product.setDescription(request.getDescription());
         product.setBasePrice(request.getBasePrice());
+        product.setDiscountPercent(request.getDiscountPercent() != null ? request.getDiscountPercent() : 0);
 
         if (request.getVariants() != null) {
             product.setVariants(request.getVariants().stream().map(v -> {

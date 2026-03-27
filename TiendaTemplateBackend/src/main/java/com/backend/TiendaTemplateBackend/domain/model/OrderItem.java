@@ -25,8 +25,10 @@ public class OrderItem {
     private Order order;
 
     @ManyToOne
-    @JoinColumn(name = "product_id")
+    @JoinColumn(name = "product_id", nullable = true)
     private ProductEntity product;
+
+    private String productName; // snapshot del nombre para historial
 
     private Integer quantity;
     private Double price; //Precio en el momento de la compra

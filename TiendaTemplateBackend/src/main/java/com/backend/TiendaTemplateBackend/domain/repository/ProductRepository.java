@@ -12,5 +12,6 @@ public interface ProductRepository {
     List<Product> findAll();
     void deleteById(Long id);
     boolean existsById(Long id);
+    void updateGlobalDiscount(Integer discountPercent);
 
 }

@@ -52,6 +52,7 @@ export interface Product {
   name: string;
   description: string;
   basePrice: number;
+  discountPercent?: number;
   variants: ProductVariant[];
   images: ProductImage[];
 }

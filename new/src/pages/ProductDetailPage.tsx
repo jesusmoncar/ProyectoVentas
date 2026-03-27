@@ -112,6 +112,11 @@ export default function ProductDetailPage() {
                   src={getImageUrl(product.images[currentImageIndex], product.id)}
                   alt={product.name}
                 />
+                {product.discountPercent !== undefined && product.discountPercent > 0 && (
+                  <span className="product-card__badge product-card__badge--discount" style={{ top: '20px', left: '20px', padding: '8px 16px', fontSize: '1rem' }}>
+                    -{product.discountPercent}%
+                  </span>
+                )}
                 {product.images.length > 1 && (
                   <>
                     <button className="product-detail__nav-btn product-detail__nav-btn--prev" onClick={prevImage}>
@@ -155,7 +160,20 @@ export default function ProductDetailPage() {
         {/* Info */}
         <div className="product-detail__info">
           <h1 className="product-detail__name">{product.name}</h1>
-          <div className="product-detail__price">€{currentPrice.toFixed(2)}</div>
+          <div className="product-detail__price-row" style={{ display: 'flex', alignItems: 'baseline', gap: '15px', marginBottom: '15px' }}>
+            {product.discountPercent !== undefined && product.discountPercent > 0 ? (
+              <>
+                <div className="product-detail__price" style={{ color: 'var(--pastel-pink-dark)' }}>
+                  €{(currentPrice * (1 - product.discountPercent / 100)).toFixed(2)}
+                </div>
+                <div className="product-detail__price-old" style={{ textDecoration: 'line-through', color: 'var(--text-muted)', fontSize: '1.2rem' }}>
+                  €{currentPrice.toFixed(2)}
+                </div>
+              </>
+            ) : (
+              <div className="product-detail__price">€{currentPrice.toFixed(2)}</div>
+            )}
+          </div>
           <p className="product-detail__description">{product.description}</p>
 
           {/* Colors */}

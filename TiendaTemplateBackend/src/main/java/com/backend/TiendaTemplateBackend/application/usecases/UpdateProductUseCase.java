@@ -27,6 +27,7 @@ public class UpdateProductUseCase {
         existingProduct.setName(request.getName());
         existingProduct.setDescription(request.getDescription());
         existingProduct.setBasePrice(request.getBasePrice());
+        existingProduct.setDiscountPercent(request.getDiscountPercent() != null ? request.getDiscountPercent() : 0);
 
         // 3. Actualizar variantes
         if (request.getVariants() != null) {

@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import org.hibernate.annotations.ColumnDefault;
 import java.util.List;
 
 @Entity
@@ -24,6 +25,10 @@ public class ProductEntity {
 
     @Column(nullable = false)
     private Double basePrice;
+
+    @Column(nullable = false)
+    @ColumnDefault("0")
+    private Integer discountPercent = 0;
 
     //relacion con las variantes tallas/colores
     //orphanRemoval asegura que si borras una variante de la lista, se borre de la DB

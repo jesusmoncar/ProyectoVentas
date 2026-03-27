@@ -29,6 +29,7 @@ public class ProductRepositoryImpl implements ProductRepository {
             entity.setName(product.getName());
             entity.setDescription(product.getDescription());
             entity.setBasePrice(product.getBasePrice());
+            entity.setDiscountPercent(product.getDiscountPercent() != null ? product.getDiscountPercent() : 0);
 
             if (entity.getVariants() != null) {
                 entity.getVariants().clear();
@@ -73,5 +74,10 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public boolean existsById(Long id) {
         return jpaRepository.existsById(id);
+    }
+
+    @Override
+    public void updateGlobalDiscount(Integer discountPercent) {
+        jpaRepository.updateGlobalDiscount(discountPercent);
     }
 }

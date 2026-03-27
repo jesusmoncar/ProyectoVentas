@@ -8,6 +8,7 @@ public class ProductRequest {
     private String name;
     private String description;
     private Double basePrice;
+    private Integer discountPercent;
     private List<VariantRequest> variants;
 
     @Data

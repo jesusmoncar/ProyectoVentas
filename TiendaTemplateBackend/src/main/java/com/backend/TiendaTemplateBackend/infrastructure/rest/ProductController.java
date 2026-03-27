@@ -27,11 +27,19 @@ public class ProductController {
     private final DeleteProductUseCase deleteProductUseCase;
     private final UploadProductImagesUseCase uploadProductImagesUseCase;
     private final DeleteProductImageUseCase deleteProductImageUseCase;
+    private final UpdateGlobalDiscountUseCase updateGlobalDiscountUseCase;
     private final ProductMapper productMapper;
 
     @GetMapping
     public ResponseEntity<List<ProductResponse>> getAll() {
         return ResponseEntity.ok(productMapper.toResponseList(getProductUseCase.getAll()));
+    }
+
+    @PutMapping("/discount/global")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> updateGlobalDiscount(@RequestParam("percent") Integer percent) {
+        updateGlobalDiscountUseCase.execute(percent);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{id}")

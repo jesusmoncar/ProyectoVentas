@@ -227,3 +227,28 @@ h1, h2, h3, h4, h5, h6 {
     padding-bottom: 32px;
   }
 }
+/* Discounts & Badges */
+.product-card__badge--discount {
+  background: #FF5252 !important;
+  color: white !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 8px rgba(255, 82, 82, 0.3);
+}
+
+.product-card__price--discount {
+  color: #FF5252;
+  font-weight: 700;
+}
+
+.product-card__price-old {
+  text-decoration: line-through;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-left: 8px;
+}
+
+.product-detail__price-old {
+  text-decoration: line-through;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+}

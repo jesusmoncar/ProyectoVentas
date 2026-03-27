@@ -13,6 +13,7 @@ public class Product {
     private String name;
     private String description;
     private Double basePrice;
+    private Integer discountPercent;
     private List<ProductVariant> variants;
     private List<String> images;
 

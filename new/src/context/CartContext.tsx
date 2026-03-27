@@ -1,5 +1,7 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from 'react';
 import type { CartItem, Product, ProductVariant } from '../types';
+import { useAuth } from './AuthContext';
+import api from '../api/api';
 
 interface CartContextType {
   items: CartItem[];
@@ -17,15 +19,91 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [items, setItems] = useState<CartItem[]>(() => {
     const saved = localStorage.getItem('cart');
     return saved ? JSON.parse(saved) : [];
   });
   const [isOpen, setIsOpen] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const skipSync = useRef(false);
 
+  // 1. Fetch from backend on login
+  useEffect(() => {
+    if (authLoading) return;
+
+    const fetchBackendCart = async () => {
+      if (!isAuthenticated) {
+        setIsInitialLoad(false);
+        return;
+      }
+      
+      try {
+        const res = await api.get<{ cart: string }>('/user/saved-data');
+        if (res.data && res.data.cart) {
+          const remoteItems: CartItem[] = JSON.parse(res.data.cart);
+          
+          setItems(prevItems => {
+            // Merging strategy:
+            // Combine items from localStorage (guest) with remote items (BBDD)
+            const merged = [...remoteItems];
+            
+            prevItems.forEach(localItem => {
+              const remoteExists = merged.find(
+                ri => ri.product.id === localItem.product.id && ri.variant.id === localItem.variant.id
+              );
+              if (!remoteExists) {
+                merged.push(localItem);
+              }
+            });
+
+            // Prevent immediate sync back if data didn't change meaningfully
+            if (JSON.stringify(merged) === JSON.stringify(prevItems)) {
+               skipSync.current = true;
+            }
+            
+            return merged;
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching cart from backend:", err);
+      } finally {
+        setIsInitialLoad(false);
+      }
+    };
+
+    fetchBackendCart();
+  }, [isAuthenticated, authLoading]);
+
+  // 1.5. Clear cart on logout
+  useEffect(() => {
+    if (!isAuthenticated && !authLoading && !isInitialLoad) {
+      setItems([]);
+      localStorage.removeItem('cart');
+    }
+  }, [isAuthenticated, authLoading, isInitialLoad]);
+
+  // 2. Sync to localStorage and Backend whenever items change
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(items));
-  }, [items]);
+    
+    const syncToBackend = async () => {
+      if (!isAuthenticated || authLoading || isInitialLoad) return;
+      if (skipSync.current) {
+        skipSync.current = false;
+        return;
+      }
+
+      try {
+        await api.put('/user/cart', { cart: JSON.stringify(items) });
+      } catch (err) {
+        console.error("Error syncing cart to backend:", err);
+      }
+    };
+
+    const timeoutId = setTimeout(syncToBackend, 500); // Debounce
+    return () => clearTimeout(timeoutId);
+  }, [items, isAuthenticated, authLoading, isInitialLoad]);
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => {
