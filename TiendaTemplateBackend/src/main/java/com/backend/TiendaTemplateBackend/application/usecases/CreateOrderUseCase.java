@@ -140,7 +140,7 @@ public class CreateOrderUseCase {
                         .postal_code(postalCode)
                         .country(country)
                         .weight("2")
-                        .request_label(true)
+                        .request_label(false)
                         .shipping_method(2190)
                         .build();
 
