@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FiSearch, FiTrash2, FiPackage, FiArrowLeft, FiClock, FiTruck, FiCheckCircle, FiLoader, FiEye, FiX, FiAlertCircle } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
-import api from '../api/api';
+import api, { formatAddress } from '../api/api';
 import type { Order } from '../types';
 import toast from 'react-hot-toast';
 
@@ -369,7 +369,7 @@ export default function AdminOrdersPage() {
                   <td>{formatDate(order.orderDate || order.createdAt || '')}</td>
                   <td>
                     <div className="admin__customer-info">
-                      <span className="admin__address" title={order.shippingAddress}>{order.shippingAddress}</span>
+                      <span className="admin__address" title={formatAddress(order.shippingAddress)}>{formatAddress(order.shippingAddress)}</span>
                       {activeTab === 'returns' && order.motivoDevolucion && (
                         <div style={{ marginTop: '8px', fontSize: '0.85rem', color: '#D32F2F', background: '#FFEBEE', padding: '6px 10px', borderRadius: '4px' }}>
                           <strong>Motivo:</strong> {order.motivoDevolucion}
@@ -478,7 +478,7 @@ export default function AdminOrdersPage() {
                 </div>
                 <div className="admin__meta-group">
                   <label>Dirección de entrega</label>
-                  <p>{selectedOrder.shippingAddress}</p>
+                  <p>{formatAddress(selectedOrder.shippingAddress)}</p>
                 </div>
                 {selectedOrder.deliveryMode === 'SHIPPING' && (
                    <div className="admin__meta-group">

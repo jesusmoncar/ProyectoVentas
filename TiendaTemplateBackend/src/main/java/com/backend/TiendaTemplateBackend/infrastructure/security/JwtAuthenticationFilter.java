@@ -1,6 +1,7 @@
 package com.backend.TiendaTemplateBackend.infrastructure.security;
 
 import com.backend.TiendaTemplateBackend.application.services.CustomUserDetailsService;
+import com.backend.TiendaTemplateBackend.infrastructure.tenant.TenantContext;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,6 +30,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
+
+        // *** CRITICAL: Set tenant context BEFORE authentication ***
+        // This filter runs before Spring MVC interceptors, so we must
+        // extract X-Page-Code here for CustomUserDetailsService to work.
+        String pageCode = request.getHeader("X-Page-Code");
+        if (pageCode == null || pageCode.trim().isEmpty()) {
+            pageCode = "bloom"; // default
+        }
+        TenantContext.setCurrentTenant(pageCode);
 
         final String authHeader = request.getHeader("Authorization");
 

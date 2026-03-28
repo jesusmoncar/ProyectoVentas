@@ -9,16 +9,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class SaveCartUseCase {
+public class SaveAddressUseCase {
 
     private final UserRepository userRepository;
 
     @Transactional
-    public void execute(String email, String cartJson) {
+    public void execute(String email, String addressJson) {
         String pageCode = TenantContext.getCurrentTenant();
         User user = userRepository.findByEmailAndPageCode(email, pageCode)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado en " + pageCode));
-        user.setCartData(cartJson);
+        user.setDireccion(addressJson);
         userRepository.save(user);
     }
 }

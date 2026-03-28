@@ -6,6 +6,7 @@ import com.backend.TiendaTemplateBackend.domain.model.User;
 import com.backend.TiendaTemplateBackend.infrastructure.persistence.RoleRepository;
 import com.backend.TiendaTemplateBackend.infrastructure.persistence.UserRepository;
 import com.backend.TiendaTemplateBackend.infrastructure.security.JwtService;
+import com.backend.TiendaTemplateBackend.infrastructure.tenant.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -32,6 +33,7 @@ public class GoogleLoginUseCase {
     private static final String GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
 
     public AuthResponse execute(String accessToken) {
+        String pageCode = TenantContext.getCurrentTenant();
         // Verificar el token con Google y obtener info del usuario
         Map<String, Object> googleUser = fetchGoogleUserInfo(accessToken);
 
@@ -44,11 +46,12 @@ public class GoogleLoginUseCase {
         }
 
         // Buscar o crear el usuario
-        User user = userRepository.findByEmail(email).orElseGet(() -> {
+        User user = userRepository.findByEmailAndPageCode(email, pageCode).orElseGet(() -> {
             Role role = roleRepository.findByName("ROLE_USER")
                     .orElseThrow(() -> new RuntimeException("Rol ROLE_USER no encontrado."));
 
             User newUser = new User();
+            newUser.setPageCode(pageCode);
             newUser.setEmail(email);
             newUser.setNombre(firstName);
             newUser.setApellido(lastName.isEmpty() ? "-" : lastName);

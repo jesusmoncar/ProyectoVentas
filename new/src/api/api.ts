@@ -11,6 +11,11 @@ api.interceptors.request.use(config => {
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Add the page code for multi-tenant backend identification
+    const pageCode = import.meta.env.VITE_PAGE_CODE || 'bloom';
+    config.headers['X-Page-Code'] = pageCode;
+    
     return config;
 });
 
@@ -40,3 +45,33 @@ export const getImageUrl = (image: any, productId?: number) => {
 
     return path;
 };
+
+/**
+ * Formats a raw address string (which might be a JSON from ShippingAddress)
+ * into a human-readable format: "Street Number, CP City, Country"
+ */
+export const formatAddress = (rawAddress: string | undefined): string => {
+    if (!rawAddress) return 'No especificada';
+    
+    // If it's the fixed pickup address, return as is
+    if (rawAddress.includes('Tienda BLOOM') || rawAddress.includes('Recogida')) {
+        return rawAddress;
+    }
+
+    try {
+        const parsed = JSON.parse(rawAddress);
+        if (parsed && typeof parsed === 'object' && parsed.street) {
+            const { street, houseNumber, postalCode, city, country } = parsed;
+            let formatted = street;
+            if (houseNumber) formatted += ` ${houseNumber}`;
+            if (postalCode || city) formatted += `, ${postalCode} ${city}`;
+            if (country && country !== 'ES') formatted += `, ${country}`;
+            return formatted;
+        }
+    } catch (e) {
+        // Not a JSON string, return as is (legacy format)
+    }
+
+    return rawAddress;
+};
+

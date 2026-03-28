@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiShoppingBag, FiHeart, FiEye } from 'react-icons/fi';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 import { getImageUrl } from '../api/api';
 import type { Product } from '../types';
 
@@ -12,9 +13,10 @@ interface Props {
 
 export default function ProductCard({ product, index = 0 }: Props) {
   const { addToCart } = useCart();
-  const [liked, setLiked] = useState(false);
+  const { toggleFavorite, isFavorite } = useWishlist();
   const [imageLoaded, setImageLoaded] = useState(false);
 
+  const liked = isFavorite(product.id);
   const imageUrl = getImageUrl(product.images?.[0], product.id);
 
   const uniqueColors = [...new Set(product.variants.map(v => v.color))].filter(Boolean);
@@ -25,6 +27,12 @@ export default function ProductCard({ product, index = 0 }: Props) {
     if (product.variants.length > 0) {
       addToCart(product, product.variants[0]);
     }
+  };
+
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleFavorite(product);
   };
 
   return (
@@ -56,10 +64,10 @@ export default function ProductCard({ product, index = 0 }: Props) {
 
           <button
             className={`product-card__like ${liked ? 'product-card__like--active' : ''}`}
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setLiked(!liked); }}
+            onClick={handleToggleFavorite}
             aria-label="Me gusta"
           >
-            <FiHeart size={18} />
+            <FiHeart size={18} fill={liked ? "currentColor" : "none"} />
           </button>
 
           {product.variants.some(v => v.stock <= 3 && v.stock > 0) && (

@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import com.backend.TiendaTemplateBackend.infrastructure.tenant.TenantContext;
+
 @Service
 @RequiredArgsConstructor
 public class GetProductUseCase {
@@ -17,7 +19,8 @@ public class GetProductUseCase {
 
     @Transactional(readOnly = true)
     public List<Product> getAll(){
-        return productRepository.findAll();
+        String pageCode = TenantContext.getCurrentTenant();
+        return productRepository.findByPageCode(pageCode);
     }
 
     @Transactional(readOnly = true)

@@ -15,9 +15,11 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrderTrackingPage from './pages/OrderTrackingPage';
 import MyOrdersPage from './pages/MyOrdersPage';
+import FavoritesPage from './pages/FavoritesPage';
 import OrderDetailPage from './pages/OrderDetailPage';
 import AdminProductsPage from './pages/AdminProductsPage';
 import AdminOrdersPage from './pages/AdminOrdersPage';
+import ProfilePage from './pages/ProfilePage';
 import './App.css';
 
 function Layout({ children }: { children: React.ReactNode }) {
@@ -69,11 +71,17 @@ function App() {
         <Route path="/catalogo" element={<Layout><CatalogPage /></Layout>} />
         <Route path="/producto/:id" element={<Layout><ProductDetailPage /></Layout>} />
         <Route path="/seguimiento" element={<Layout><OrderTrackingPage /></Layout>} />
+        <Route path="/favoritos" element={<Layout><FavoritesPage /></Layout>} />
         <Route path="/mis-pedidos" element={<Layout><ProtectedRoute><MyOrdersPage /></ProtectedRoute></Layout>} />
         <Route path="/pedidos/:numeroPedido" element={<Layout><ProtectedRoute><OrderDetailPage /></ProtectedRoute></Layout>} />
         <Route path="/checkout" element={
           <Layout>
             <ProtectedRoute><CheckoutPage /></ProtectedRoute>
+          </Layout>
+        } />
+        <Route path="/profile" element={
+          <Layout>
+            <ProtectedRoute><ProfilePage /></ProtectedRoute>
           </Layout>
         } />
   

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FiSearch, FiPackage, FiTruck, FiCheckCircle, FiClock, FiMapPin } from 'react-icons/fi';
-import api from '../api/api';
+import api, { formatAddress } from '../api/api';
 import type { Order } from '../types';
 import toast from 'react-hot-toast';
 
@@ -112,7 +112,7 @@ export default function OrderTrackingPage() {
           <div className="tracking__details">
             <div className="tracking__detail-card">
               <h3><FiMapPin size={18} /> Dirección de Envío</h3>
-              <p>{order.shippingAddress}</p>
+              <p>{formatAddress(order.shippingAddress)}</p>
             </div>
 
             <div className="tracking__detail-card">

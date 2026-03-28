@@ -1,19 +1,37 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiMail, FiLock, FiEye, FiEyeOff, FiUser, FiPhone, FiMapPin, FiArrowRight } from 'react-icons/fi';
+import { FiMail, FiLock, FiEye, FiEyeOff, FiUser, FiPhone, FiMapPin, FiArrowRight, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
+import AddressForm from '../components/AddressForm';
+import type { ShippingAddress } from '../types';
 import toast from 'react-hot-toast';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { register, user } = useAuth();
   const [form, setForm] = useState({
     nombre: '', apellido: '', email: '', password: '', telefono: '', direccion: ''
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [address, setAddress] = useState<ShippingAddress>(() => {
+    if (user?.direccion) {
+      try {
+        return JSON.parse(user.direccion);
+      } catch (e) {
+        return { street: user.direccion, houseNumber: '', postalCode: '', city: '', country: 'ES' };
+      }
+    }
+    return { street: '', houseNumber: '', postalCode: '', city: '', country: 'ES' };
+  });
+
   const [loading, setLoading] = useState(false);
 
   const update = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
+
+  const handleAddressSave = () => {
+    setShowAddressForm(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +45,12 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      await register(form);
+      // Stringify structured address before sending
+      const registrationData = {
+        ...form,
+        direccion: JSON.stringify(address)
+      };
+      await register(registrationData);
       toast.success('¡Cuenta creada exitosamente! 🎉');
       navigate('/login');
     } catch (err: any) {
@@ -106,13 +129,30 @@ export default function RegisterPage() {
                 </div>
               </div>
               <div className="auth-form__field">
-                <label htmlFor="reg-direccion">Dirección</label>
-                <div className="auth-form__input-wrapper">
+                <label htmlFor="reg-direccion">Dirección de Envío</label>
+                <div 
+                  className={`auth-form__input-wrapper ${showAddressForm ? 'auth-form__input-wrapper--active' : ''}`}
+                  onClick={() => setShowAddressForm(!showAddressForm)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <FiMapPin size={18} />
-                  <input id="reg-direccion" type="text" placeholder="Tu dirección" value={form.direccion} onChange={e => update('direccion', e.target.value)} />
+                  <div style={{ flex: 1, color: address.street ? 'var(--text-primary)' : 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                    {address.street ? `${address.street} ${address.houseNumber}, ${address.city}` : 'Pulsa para añadir dirección'}
+                  </div>
+                  {showAddressForm ? <FiChevronUp size={18} /> : <FiChevronDown size={18} />}
                 </div>
               </div>
             </div>
+
+            {showAddressForm && (
+              <div className="auth-form__expandable-section" style={{ marginTop: '0', marginBottom: '1.5rem', background: 'var(--gray-50)', padding: '1.5rem', borderRadius: 'var(--radius-lg)' }}>
+                <AddressForm 
+                  address={address} 
+                  onChange={setAddress} 
+                  onSave={handleAddressSave}
+                />
+              </div>
+            )}
 
             <button type="submit" className="btn btn--primary btn--full btn--lg" disabled={loading}>
               {loading ? 'Creando cuenta...' : 'Crear Mi Cuenta'} {!loading && <FiArrowRight size={18} />}

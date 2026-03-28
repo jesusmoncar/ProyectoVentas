@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.stream.Collectors;
 import com.backend.TiendaTemplateBackend.infrastructure.persistence.entities.ProductVariantEntity;
 
+import com.backend.TiendaTemplateBackend.infrastructure.tenant.TenantContext;
+
 @Component
 @RequiredArgsConstructor // Inyecta automáticamente el JPA repo y el Mapper
 public class ProductRepositoryImpl implements ProductRepository {
@@ -24,12 +26,15 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public Product save(Product product) {
         ProductEntity entity;
+        String currentPageCode = TenantContext.getCurrentTenant();
+        
         if (product.getId() != null) {
             entity = jpaRepository.findById(product.getId()).orElseThrow();
             entity.setName(product.getName());
             entity.setDescription(product.getDescription());
             entity.setBasePrice(product.getBasePrice());
             entity.setDiscountPercent(product.getDiscountPercent() != null ? product.getDiscountPercent() : 0);
+            entity.setPageCode(currentPageCode); // Ensure pageCode is set
 
             if (entity.getVariants() != null) {
                 entity.getVariants().clear();
@@ -46,6 +51,7 @@ public class ProductRepositoryImpl implements ProductRepository {
             }
         } else {
             entity = productMapper.toEntity(product);
+            entity.setPageCode(currentPageCode); // Set tenant for new products
             if (entity.getVariants() != null) {
                 entity.getVariants().forEach(variant -> variant.setProduct(entity));
             }
@@ -62,8 +68,8 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     @Override
-    public List<Product> findAll() {
-        return productMapper.toDomainList(jpaRepository.findAll());
+    public List<Product> findByPageCode(String pageCode) {
+        return productMapper.toDomainList(jpaRepository.findByPageCode(pageCode));
     }
 
     @Override
@@ -77,7 +83,7 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     @Override
-    public void updateGlobalDiscount(Integer discountPercent) {
-        jpaRepository.updateGlobalDiscount(discountPercent);
+    public void updateGlobalDiscount(Integer discountPercent, String pageCode) {
+        jpaRepository.updateGlobalDiscount(discountPercent, pageCode);
     }
 }

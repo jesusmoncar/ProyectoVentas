@@ -9,10 +9,14 @@ import java.util.Optional;
 
 @Repository
 public interface OrderJpaRepository extends JpaRepository<Order, Long> {
-    Optional<Order> findByNumeroPedido(String numeroPedido);
-    List<Order> findByUserEmail(String email);
-    List<Order> findByStatusIn(List<String> statuses);
+    Optional<Order> findByNumeroPedidoAndPageCode(String numeroPedido, String pageCode);
+    List<Order> findByUserEmailAndPageCode(String email, String pageCode);
+    List<Order> findByStatusInAndPageCode(List<String> statuses, String pageCode);
+    List<Order> findAllByPageCode(String pageCode);
     
-    // Buscar ordenes por estado y fecha anterior a...
+    // Buscar ordenes por estado y fecha anterior a... (Global para Scheduler)
     List<Order> findByStatusAndOrderDateBefore(String status, java.time.LocalDateTime date);
+
+    // Buscar ordenes por estado y fecha anterior a... (Específico por tienda)
+    List<Order> findByStatusAndOrderDateBeforeAndPageCode(String status, java.time.LocalDateTime date, String pageCode);
 }

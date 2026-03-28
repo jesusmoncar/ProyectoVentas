@@ -8,9 +8,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long> {
+    List<ProductEntity> findByPageCode(String pageCode);
+
     @Modifying
-    @Query("UPDATE ProductEntity p SET p.discountPercent = :percent")
-    void updateGlobalDiscount(@Param("percent") Integer percent);
+    @Query("UPDATE ProductEntity p SET p.discountPercent = :percent WHERE p.pageCode = :pageCode")
+    void updateGlobalDiscount(@Param("percent") Integer percent, @Param("pageCode") String pageCode);
 }

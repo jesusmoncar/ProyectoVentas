@@ -1,0 +1,125 @@
+/* Profile Page Styles */
+.profile-page {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.profile-header {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.profile-header h1 {
+    font-size: 2.5rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.profile-header p {
+    color: var(--text-secondary);
+}
+
+.profile-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 2rem;
+}
+
+.profile-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.profile-nav-card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-100);
+}
+
+.profile-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    font-size: 0.95rem;
+    text-align: left;
+}
+
+.profile-nav-item:hover {
+    background: var(--pastel-pink-light);
+    color: var(--pastel-pink-dark);
+}
+
+.profile-nav-item--active {
+    background: var(--pastel-pink);
+    color: var(--white);
+}
+
+.profile-nav-item--active:hover {
+    background: var(--pastel-pink-dark);
+    color: var(--white);
+}
+
+.profile-content {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--gray-100);
+}
+
+.profile-section {
+    margin-bottom: 3rem;
+}
+
+.profile-section:last-child {
+    margin-bottom: 0;
+}
+
+.profile-section h3 {
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--pastel-pink-light);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.profile-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 900px) {
+    .profile-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-sidebar {
+        order: 2;
+    }
+}
+
+@media (max-width: 600px) {
+    .profile-form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .profile-content {
+        padding: 1.5rem;
+    }
+}

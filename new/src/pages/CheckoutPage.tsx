@@ -8,19 +8,29 @@ import { useAuth } from '../context/AuthContext';
 import { getImageUrl } from '../api/api';
 import api from '../api/api';
 import toast from 'react-hot-toast';
-import type { OrderRequest } from '../types';
+import type { OrderRequest, ShippingAddress } from '../types';
 import CheckoutForm from '../components/CheckoutForm';
+import AddressForm from '../components/AddressForm';
 
 // Make sure to configure your environment variables
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || '');
 
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, updateAddress } = useAuth();
   
   // States
   const [deliveryMode, setDeliveryMode] = useState<'SHIPPING' | 'PICKUP'>('SHIPPING');
-  const [address, setAddress] = useState(user?.direccion || '');
+  const [address, setAddress] = useState<ShippingAddress>(() => {
+    if (user?.direccion) {
+      try {
+        return JSON.parse(user.direccion);
+      } catch (e) {
+        return { street: user.direccion, houseNumber: '', postalCode: '', city: '', country: 'ES' };
+      }
+    }
+    return { street: '', houseNumber: '', postalCode: '', city: '', country: 'ES' };
+  });
   const [loading, setLoading] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
   
@@ -33,7 +43,7 @@ export default function CheckoutPage() {
   const finalTotal = totalPrice + shippingCost;
 
   const orderData: OrderRequest = {
-    shippingAddress: deliveryMode === 'PICKUP' ? 'Recogida en Tienda BLOOM (Calle Principal 123)' : address,
+    shippingAddress: deliveryMode === 'PICKUP' ? 'Recogida en Tienda BLOOM (Calle Principal 123)' : JSON.stringify(address),
     deliveryMode: deliveryMode,
     items: items.map(item => ({
       productId: item.product.id,
@@ -44,7 +54,10 @@ export default function CheckoutPage() {
 
   const handleConfirmAddress = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (deliveryMode === 'SHIPPING' && !address.trim()) { toast.error('Ingresa la dirección de envío'); return; }
+    if (deliveryMode === 'SHIPPING' && (!address.street.trim() || !address.postalCode.trim() || !address.city.trim())) { 
+      toast.error('Completa los campos obligatorios de la dirección de envío'); 
+      return; 
+    }
     if (items.length === 0) { toast.error('Tu carrito está vacío'); return; }
 
     setLoading(true);
@@ -156,19 +169,19 @@ export default function CheckoutPage() {
             {!addressConfirmed ? (
               <form onSubmit={handleConfirmAddress}>
                 {deliveryMode === 'SHIPPING' ? (
-                  <div className="auth-form__field">
-                    <label htmlFor="shipping-address">Dirección completa</label>
-                    <div className="auth-form__input-wrapper">
-                      <FiMapPin size={18} />
-                      <input
-                        id="shipping-address"
-                        type="text"
-                        placeholder="Calle, número, ciudad, código postal"
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                      />
-                    </div>
-                  </div>
+                  <AddressForm 
+                    address={address} 
+                    onChange={setAddress} 
+                    onSave={async (addr) => {
+                      try {
+                        await updateAddress(addr);
+                        toast.success('Dirección guardada en tu perfil');
+                      } catch (err) {
+                        toast.error('Error al guardar la dirección');
+                      }
+                    }}
+                    savedAddress={user?.direccion}
+                  />
                 ) : (
                   <div className="checkout__payment-placeholder" style={{ backgroundColor: 'var(--pastel-pink-light)', textAlign: 'left', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                     <FiMapPin size={24} style={{ color: 'var(--pastel-pink-dark)', flexShrink: 0, marginTop: '2px' }}/>
@@ -189,7 +202,7 @@ export default function CheckoutPage() {
               </form>
             ) : (
               <div className="checkout__address-confirmed">
-                <p><strong>{deliveryMode === 'PICKUP' ? 'Recogida en:' : 'Enviando a:'}</strong> {deliveryMode === 'PICKUP' ? 'Tienda Central BLOOM' : address}</p>
+                <p><strong>{deliveryMode === 'PICKUP' ? 'Recogida en:' : 'Enviando a:'}</strong> {deliveryMode === 'PICKUP' ? 'Tienda Central BLOOM' : `${address.street} ${address.houseNumber}, ${address.postalCode} ${address.city}`}</p>
                 <button className="btn btn--ghost" onClick={() => { setAddressConfirmed(false); setClientSecret(''); }}>✎ Cambiar</button>
               </div>
             )}

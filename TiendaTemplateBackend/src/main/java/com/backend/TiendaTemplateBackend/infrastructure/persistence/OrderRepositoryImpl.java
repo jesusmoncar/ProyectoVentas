@@ -26,17 +26,23 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     @Override
-    public Optional<Order> findByNumeroPedido(String numeroPedido) {
-        return jpaRepository.findByNumeroPedido(numeroPedido);
+    public Optional<Order> findByNumeroPedido(String numeroPedido, String pageCode) {
+        return jpaRepository.findByNumeroPedidoAndPageCode(numeroPedido, pageCode);
     }
 
     @Override
-    public List<Order> findAll() {
-        return jpaRepository.findAll();
+    public List<Order> findAll(String pageCode) {
+        return jpaRepository.findAllByPageCode(pageCode);
     }
 
     @Override
-    public void deleteById(Long id) {
-        jpaRepository.deleteById(id);
+    public void deleteById(Long id, String pageCode) {
+        // Here we could also verify if the order belongs to the tenant before deleting,
+        // but for now let's delegate to the JPA repository or do a check.
+        jpaRepository.findById(id).ifPresent(order -> {
+            if (order.getPageCode().equals(pageCode)) {
+                jpaRepository.delete(order);
+            }
+        });
     }
 }

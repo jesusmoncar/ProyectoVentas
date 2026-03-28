@@ -1,11 +1,12 @@
 package com.backend.TiendaTemplateBackend.application.usecases;
 
-import com.backend.TiendaTemplateBackend.application.dto.LoginRequest;
 import com.backend.TiendaTemplateBackend.application.dto.AuthResponse;
+import com.backend.TiendaTemplateBackend.application.dto.LoginRequest;
 import com.backend.TiendaTemplateBackend.domain.model.Role;
 import com.backend.TiendaTemplateBackend.domain.model.User;
 import com.backend.TiendaTemplateBackend.infrastructure.persistence.UserRepository;
 import com.backend.TiendaTemplateBackend.infrastructure.security.JwtService;
+import com.backend.TiendaTemplateBackend.infrastructure.tenant.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,7 +23,8 @@ public class LoginUseCase {
     private final JwtService jwtService;
 
     public AuthResponse execute(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
+        String pageCode = TenantContext.getCurrentTenant();
+        User user = userRepository.findByEmailAndPageCode(request.getEmail(), pageCode)
                 .orElseThrow(() -> new IllegalArgumentException("Credenciales inválidas."));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {

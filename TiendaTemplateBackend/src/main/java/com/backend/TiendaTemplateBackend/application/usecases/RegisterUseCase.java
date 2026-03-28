@@ -5,6 +5,7 @@ import com.backend.TiendaTemplateBackend.domain.model.Role;
 import com.backend.TiendaTemplateBackend.domain.model.User;
 import com.backend.TiendaTemplateBackend.infrastructure.persistence.RoleRepository;
 import com.backend.TiendaTemplateBackend.infrastructure.persistence.UserRepository;
+import com.backend.TiendaTemplateBackend.infrastructure.tenant.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,14 +21,16 @@ public class RegisterUseCase {
     private final PasswordEncoder passwordEncoder;
 
     public void execute(AuthRequest request, String roleName) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("El email ya existe.");
+        String pageCode = TenantContext.getCurrentTenant();
+        if (userRepository.findByEmailAndPageCode(request.getEmail(), pageCode).isPresent()) {
+            throw new IllegalArgumentException("El email ya existe en esta tienda.");
         }
 
         Role role = roleRepository.findByName(roleName)
                 .orElseThrow(() -> new RuntimeException("Rol " + roleName + " no encontrado."));
 
         User user = new User();
+        user.setPageCode(pageCode);
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setNombre(request.getNombre());

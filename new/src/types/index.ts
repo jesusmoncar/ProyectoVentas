@@ -65,6 +65,14 @@ export interface CartItem {
 }
 
 // Order Types
+export interface ShippingAddress {
+  street: string;
+  houseNumber: string;
+  postalCode: string;
+  city: string;
+  country: string;
+}
+
 export interface OrderItemRequest {
   productId: number;
   quantity: number;
@@ -72,7 +80,7 @@ export interface OrderItemRequest {
 }
 
 export interface OrderRequest {
-  shippingAddress: string;
+  shippingAddress: ShippingAddress | string;
   items: OrderItemRequest[];
   paymentIntentId?: string;
   deliveryMode?: string;

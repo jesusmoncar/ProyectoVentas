@@ -5,6 +5,8 @@ import com.backend.TiendaTemplateBackend.domain.model.PasswordResetToken;
 import com.backend.TiendaTemplateBackend.domain.model.User;
 import com.backend.TiendaTemplateBackend.infrastructure.persistence.PasswordResetTokenRepository;
 import com.backend.TiendaTemplateBackend.infrastructure.persistence.UserRepository;
+import com.backend.TiendaTemplateBackend.infrastructure.tenant.TenantContext;
+import com.backend.TiendaTemplateBackend.infrastructure.tenant.TenantConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -21,13 +23,18 @@ public class ForgotPasswordUseCase {
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository tokenRepository;
     private final EmailService emailService;
+    private final TenantConfigService tenantConfigService;
 
     @Value("${app.frontend.url:http://localhost:4200}")
-    private String frontendUrl;
+    private String defaultFrontendUrl;
 
     @Transactional
     public void execute(String email) {
-        Optional<User> userOpt = userRepository.findByEmail(email);
+        String pageCode = TenantContext.getCurrentTenant();
+        var configOpt = tenantConfigService.getCurrentConfig();
+        String frontendUrl = configOpt.map(c -> c.getAppFrontendUrl()).orElse(defaultFrontendUrl);
+        
+        Optional<User> userOpt = userRepository.findByEmailAndPageCode(email, pageCode);
 
         // Por seguridad, siempre respondemos lo mismo aunque el email no exista
         if (userOpt.isEmpty()) {

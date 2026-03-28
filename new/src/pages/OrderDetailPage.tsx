@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FiArrowLeft, FiPackage, FiMapPin, FiTruck, FiCheckCircle, FiClock, FiAlertCircle, FiX } from 'react-icons/fi';
-import api, { getImageUrl } from '../api/api';
+import api, { getImageUrl, formatAddress } from '../api/api';
 import type { Order } from '../types';
 import toast from 'react-hot-toast';
 
@@ -214,7 +214,7 @@ export default function OrderDetailPage() {
             <h3>Dirección de Entrega</h3>
             <div className="address-box">
               <FiMapPin />
-              <p>{order.shippingAddress || 'No especificada'}</p>
+              <p>{formatAddress(order.shippingAddress)}</p>
             </div>
           </section>
         </div>

@@ -2,6 +2,7 @@ package com.backend.TiendaTemplateBackend.application.services;
 
 import com.backend.TiendaTemplateBackend.domain.model.User;
 import com.backend.TiendaTemplateBackend.infrastructure.persistence.UserRepository;
+import com.backend.TiendaTemplateBackend.infrastructure.tenant.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.*;
@@ -17,8 +18,9 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + email));
+        String pageCode = TenantContext.getCurrentTenant();
+        User user = userRepository.findByEmailAndPageCode(email, pageCode)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + email + " en " + pageCode));
 
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),

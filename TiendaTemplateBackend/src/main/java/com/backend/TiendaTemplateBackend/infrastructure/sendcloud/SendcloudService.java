@@ -9,21 +9,19 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.backend.TiendaTemplateBackend.infrastructure.tenant.TenantConfigService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
 @Service
+@RequiredArgsConstructor
 public class SendcloudService {
 
-    @Value("${sendcloud.api.key}")
-    private String apiKey;
-
-    @Value("${sendcloud.api.secret}")
-    private String apiSecret;
+    private final TenantConfigService tenantConfigService;
+    private final RestTemplate restTemplate = new RestTemplate();
 
     private static final String API_URL = "https://panel.sendcloud.sc/api/v2/parcels";
-    private final RestTemplate restTemplate;
-
-    public SendcloudService() {
-        this.restTemplate = new RestTemplate();
-    }
 
     /**
      * Creates a parcel in Sendcloud.
@@ -33,10 +31,13 @@ public class SendcloudService {
      * @return The response from Sendcloud API
      */
     public String createParcel(SendcloudParcelRequest request) {
+        var config = tenantConfigService.getCurrentConfig()
+                .orElseThrow(() -> new RuntimeException("Sendcloud config missing for current tenant"));
+        
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
-        headers.setBasicAuth(apiKey.trim(), apiSecret.trim());
+        headers.setBasicAuth(config.getSendcloudApiKey().trim(), config.getSendcloudApiSecret().trim());
 
         HttpEntity<SendcloudParcelRequest> entity = new HttpEntity<>(request, headers);
 
@@ -55,9 +56,12 @@ public class SendcloudService {
     }
 
     public byte[] getLabelPdf(String labelUrl) {
+        var config = tenantConfigService.getCurrentConfig()
+                .orElseThrow(() -> new RuntimeException("Sendcloud config missing for current tenant"));
+                
         HttpHeaders headers = new HttpHeaders();
         headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
-        headers.setBasicAuth(apiKey.trim(), apiSecret.trim());
+        headers.setBasicAuth(config.getSendcloudApiKey().trim(), config.getSendcloudApiSecret().trim());
 
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 

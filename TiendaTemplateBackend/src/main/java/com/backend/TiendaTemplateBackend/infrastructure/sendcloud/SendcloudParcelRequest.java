@@ -26,6 +26,8 @@ public class SendcloudParcelRequest {
         private String company_name;
         @com.fasterxml.jackson.annotation.JsonProperty("address")
         private String address;
+        @com.fasterxml.jackson.annotation.JsonProperty("house_number")
+        private String house_number;
         @com.fasterxml.jackson.annotation.JsonProperty("city")
         private String city;
         @com.fasterxml.jackson.annotation.JsonProperty("postal_code")

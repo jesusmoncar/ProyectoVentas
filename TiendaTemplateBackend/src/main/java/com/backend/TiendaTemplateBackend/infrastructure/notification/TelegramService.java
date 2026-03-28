@@ -1,31 +1,28 @@
 package com.backend.TiendaTemplateBackend.infrastructure.notification;
 
 import com.backend.TiendaTemplateBackend.domain.model.Order;
-import org.springframework.beans.factory.annotation.Value;
+import com.backend.TiendaTemplateBackend.infrastructure.tenant.TenantConfigService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.ResponseEntity;
 
 @Service
+@RequiredArgsConstructor
 public class TelegramService {
 
-    @Value("${telegram.bot.token:}")
-    private String botToken;
-
-    @Value("${telegram.chat.id:}")
-    private String chatId;
-
-    private final RestTemplate restTemplate;
-
-    public TelegramService() {
-        this.restTemplate = new RestTemplate();
-    }
+    private final TenantConfigService tenantConfigService;
+    private final RestTemplate restTemplate = new RestTemplate();
 
     public void sendOrderNotification(Order order) {
-        if (botToken == null || botToken.isEmpty() || "YOUR_BOT_TOKEN".equals(botToken)) {
-            System.out.println("Telegram bot token not configured. Skipping notification.");
+        var config = tenantConfigService.getCurrentConfig().orElse(null);
+        if (config == null || config.getTelegramBotToken() == null) {
+            System.out.println("Telegram bot token not configured for this tenant. Skipping.");
             return;
         }
+
+        String botToken = config.getTelegramBotToken();
+        String chatId = config.getTelegramChatId();
 
         String message = formatOrderMessage(order);
         String url = String.format("https://api.telegram.org/bot%s/sendMessage?chat_id=%s&text=%s&parse_mode=Markdown", 

@@ -9,9 +9,9 @@ public interface ProductRepository {
     //Metodos CRUD
     Product save(Product product);
     Optional<Product> findById(Long id);
-    List<Product> findAll();
+    List<Product> findByPageCode(String pageCode);
     void deleteById(Long id);
     boolean existsById(Long id);
-    void updateGlobalDiscount(Integer discountPercent);
+    void updateGlobalDiscount(Integer discountPercent, String pageCode);
 
 }

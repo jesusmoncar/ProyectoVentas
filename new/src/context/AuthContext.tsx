@@ -20,6 +20,8 @@ interface AuthContextType {
   login: (data: LoginRequest) => Promise<void>;
   register: (data: AuthRequest) => Promise<void>;
   googleLogin: (accessToken: string) => Promise<void>;
+  updateAddress: (address: any) => Promise<void>;
+  updateProfile: (data: { nombre: string; apellido: string; telefono: string }) => Promise<void>;
   logout: () => void;
 }
 
@@ -98,10 +100,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('user');
   };
 
+  const updateAddress = async (address: any) => {
+    const addressJson = JSON.stringify(address);
+    await api.put('/user/address', { address: addressJson });
+    if (user) {
+      const updatedUser = { ...user, direccion: addressJson };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+  };
+
+  const updateProfile = async (data: { nombre: string; apellido: string; telefono: string }) => {
+    await api.put('/user/profile', data);
+    if (user) {
+      const updatedUser = { ...user, ...data };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+  };
+
   const isAdmin = user?.role === 'ROLE_ADMIN' || user?.role === 'ADMIN';
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated: !!token, isAdmin, loading, login, register, googleLogin, logout }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated: !!token, isAdmin, loading, login, register, googleLogin, logout, updateAddress, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

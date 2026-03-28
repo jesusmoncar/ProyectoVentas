@@ -1,42 +1,80 @@
 package com.backend.TiendaTemplateBackend.application.services;
 
+import com.backend.TiendaTemplateBackend.infrastructure.tenant.TenantConfigService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+
+import java.util.Properties;
 
 @Service
 @RequiredArgsConstructor
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    @Autowired(required = false)
+    private JavaMailSender defaultMailSender;
+    
+    private final TenantConfigService tenantConfigService;
 
-    @Value("${spring.mail.username}")
-    private String fromAddress;
+    @Value("${spring.mail.username:no-reply@tienda.com}")
+    private String defaultFromAddress;
 
     @Value("${app.name:TiendaTemplate}")
-    private String appName;
+    private String defaultAppName;
 
     public void sendPasswordResetEmail(String toEmail, String userName, String resetLink) {
+        var configOpt = tenantConfigService.getCurrentConfig();
+        
+        String appName = configOpt.map(c -> c.getAppName()).orElse(defaultAppName);
+        JavaMailSender mailSender = getMailSenderForTenant(configOpt.orElse(null));
+        if (mailSender == null) {
+            throw new RuntimeException("No se ha configurado ningún servidor de correo para la tienda '" + (configOpt.isPresent() ? configOpt.get().getPageCode() : "desconocida") + "' ni uno por defecto.");
+        }
+        
+        String fromAddress = configOpt.map(c -> c.getMailUsername()).orElse(defaultFromAddress);
+
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(fromAddress);
+            helper.setFrom(fromAddress, appName); // Muestra "Nombre de Tienda <email>"
             helper.setTo(toEmail);
             helper.setSubject("🔐 Restablece tu contraseña - " + appName);
-            helper.setText(buildEmailHtml(userName, resetLink), true);
+            helper.setText(buildEmailHtml(userName, resetLink, appName), true);
 
             mailSender.send(message);
-        } catch (MessagingException e) {
+        } catch (Exception e) {
             throw new RuntimeException("Error al enviar el correo de recuperación.", e);
         }
     }
 
-    private String buildEmailHtml(String userName, String resetLink) {
+    private JavaMailSender getMailSenderForTenant(com.backend.TiendaTemplateBackend.infrastructure.persistence.entities.TenantConfig config) {
+        if (config == null || config.getMailHost() == null) {
+            return defaultMailSender;
+        }
+
+        JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
+        mailSender.setHost(config.getMailHost());
+        mailSender.setPort(config.getMailPort());
+        mailSender.setUsername(config.getMailUsername());
+        mailSender.setPassword(config.getMailPassword());
+
+        Properties props = mailSender.getJavaMailProperties();
+        props.put("mail.transport.protocol", "smtp");
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.debug", "false");
+
+        return mailSender;
+    }
+
+    private String buildEmailHtml(String userName, String resetLink, String appName) {
         return """
                 <!DOCTYPE html>
                 <html lang="es">

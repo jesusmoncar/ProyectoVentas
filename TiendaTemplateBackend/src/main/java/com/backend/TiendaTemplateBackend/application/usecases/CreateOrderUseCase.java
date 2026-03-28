@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import com.backend.TiendaTemplateBackend.infrastructure.sendcloud.SendcloudService;
 import com.backend.TiendaTemplateBackend.infrastructure.sendcloud.SendcloudParcelRequest;
 import com.backend.TiendaTemplateBackend.infrastructure.notification.TelegramService;
+import com.backend.TiendaTemplateBackend.infrastructure.tenant.TenantContext;
 
 @Service
 @RequiredArgsConstructor
@@ -30,10 +31,12 @@ public class CreateOrderUseCase {
 
     @Transactional
     public Order execute(OrderRequest request, String userEmail) {
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        String pageCode = TenantContext.getCurrentTenant();
+        User user = userRepository.findByEmailAndPageCode(userEmail, pageCode)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado en " + pageCode));
 
         Order order = new Order();
+        order.setPageCode(pageCode);
         order.setUser(user);
         order.setOrderDate(LocalDateTime.now());
         
@@ -96,33 +99,48 @@ public class CreateOrderUseCase {
             try {
                 String rawAddress = request.getShippingAddress() != null ? request.getShippingAddress() : "";
                 
-                // Extraer el número de 5 cifras (Código Postal Español estándar)
+                // Try parsing as structured JSON address first
+                String street = rawAddress;
+                String houseNumber = "";
                 String postalCode = "00000";
-                java.util.regex.Pattern cpPattern = java.util.regex.Pattern.compile("\\b\\d{5}\\b");
-                java.util.regex.Matcher matcher = cpPattern.matcher(rawAddress);
-                if (matcher.find()) {
-                    postalCode = matcher.group();
-                }
-
-                // Extraer ciudad "Calle, Numero, Ciudad, CP"
                 String city = "Ciudad Desconocida";
-                String[] parts = rawAddress.split(",");
-                if (parts.length >= 3) {
-                    city = parts[parts.length - 2].trim();
-                } else if (parts.length == 2) {
-                    city = parts[1].trim();
+                String country = "ES";
+
+                try {
+                    com.fasterxml.jackson.databind.JsonNode addrNode = new com.fasterxml.jackson.databind.ObjectMapper().readTree(rawAddress);
+                    if (addrNode.has("street")) {
+                        street = addrNode.path("street").asText("");
+                        houseNumber = addrNode.path("houseNumber").asText("");
+                        postalCode = addrNode.path("postalCode").asText("00000");
+                        city = addrNode.path("city").asText("Ciudad Desconocida");
+                        country = addrNode.path("country").asText("ES");
+                    }
+                } catch (Exception jsonEx) {
+                    // Fallback: legacy plain-text address — parse with regex
+                    java.util.regex.Pattern cpPattern = java.util.regex.Pattern.compile("\\b\\d{5}\\b");
+                    java.util.regex.Matcher matcher = cpPattern.matcher(rawAddress);
+                    if (matcher.find()) {
+                        postalCode = matcher.group();
+                    }
+                    String[] parts = rawAddress.split(",");
+                    if (parts.length >= 3) {
+                        city = parts[parts.length - 2].trim();
+                    } else if (parts.length == 2) {
+                        city = parts[1].trim();
+                    }
                 }
 
                 SendcloudParcelRequest.Parcel parcelData = SendcloudParcelRequest.Parcel.builder()
                         .name(user.getNombre() + " " + user.getApellido())
                         .email(user.getEmail())
                         .telephone((user.getTelefono() != null && !user.getTelefono().isEmpty()) ? user.getTelefono() : "000000000")
-                        .address(rawAddress)
+                        .address(street)
+                        .house_number(houseNumber)
                         .city(city)
                         .postal_code(postalCode)
-                        .country("ES")
+                        .country(country)
                         .weight("2")
-                        .request_label(false)
+                        .request_label(true)
                         .shipping_method(2190)
                         .build();
 

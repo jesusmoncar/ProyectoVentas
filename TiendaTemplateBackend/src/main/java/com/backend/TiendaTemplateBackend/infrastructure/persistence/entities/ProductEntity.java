@@ -19,6 +19,9 @@ public class ProductEntity {
     private Long id;
 
     @Column(nullable = false)
+    private String pageCode;
+
+    @Column(nullable = false)
     private String name;
 
     private String description;

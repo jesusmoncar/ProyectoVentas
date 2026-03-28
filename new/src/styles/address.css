@@ -1,0 +1,88 @@
+/* Address Form Styles */
+.address-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1rem 0;
+}
+
+.address-form__grid {
+    display: grid;
+    grid-template-columns: 1fr 100px;
+    gap: 1rem;
+}
+
+.address-form__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.address-form__suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 100;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 4px;
+}
+
+.address-form__suggestion {
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background var(--transition-fast);
+    border-bottom: 1px solid var(--gray-50);
+}
+
+.address-form__suggestion:last-child {
+    border-bottom: none;
+}
+
+.address-form__suggestion:hover {
+    background: var(--pastel-pink-light);
+}
+
+.address-form__map-container {
+    height: 250px;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 2px solid var(--gray-200);
+    margin-top: 0.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.address-form__checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    margin-top: 0.5rem;
+}
+
+.address-form__checkbox input {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.address-form__actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+@media (max-width: 600px) {
+    .address-form__row {
+        grid-template-columns: 1fr;
+    }
+}
