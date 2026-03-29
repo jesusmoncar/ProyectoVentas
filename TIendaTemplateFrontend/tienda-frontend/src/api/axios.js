@@ -12,6 +12,7 @@ api.interceptors.request.use(config => {
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
+    config.headers['X-Page-Code'] = import.meta.env.VITE_PAGE_CODE || 'tienda_a';
     return config;
 });
 

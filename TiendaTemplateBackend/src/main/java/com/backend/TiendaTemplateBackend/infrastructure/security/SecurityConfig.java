@@ -72,7 +72,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:4200", "http://localhost:3000", "http://localhost:5173"));
+        //lista de puertos con acceso al backend
+        config.setAllowedOrigins(List.of(
+                "http://localhost:4200",
+                "http://localhost:3000", //Tienda_b∫∫
+                "http://localhost:5173"  //Tienda_a
+        ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
