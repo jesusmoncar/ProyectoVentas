@@ -330,7 +330,7 @@ export default function Home() {
                                                             <span
                                                                 key={v.color}
                                                                 className="product-card__color-dot"
-                                                                title={v.colorName || v.color}
+                                                                title={v.colorName || hexToColorName(v.color) || v.color}
                                                                 style={{ background: v.color.toLowerCase() }}
                                                             />
                                                         ))}

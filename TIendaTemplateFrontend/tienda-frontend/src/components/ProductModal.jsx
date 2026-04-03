@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { X, ChevronLeft, ChevronRight, ShoppingCart, Package } from 'lucide-react';
 import { BACKEND_URL } from '../api/axios';
+import { hexToColorName } from '../utils/colorUtils';
 import './ProductModal.css';
 
 const GRADIENTS = [
@@ -164,7 +165,7 @@ export default function ProductModal({ product, gradientIndex = 0, onClose, onAd
                                 <div className="pm-option-group">
                                     <p className="pm-section__label">
                                         Color: <span style={{ color: '#111827', fontWeight: 600, textTransform: 'capitalize' }}>
-                                            {variants.find(v => v.color === selectedColor)?.colorName || selectedColor}
+                                            {variants.find(v => v.color === selectedColor)?.colorName || hexToColorName(selectedColor) || selectedColor}
                                         </span>
                                     </p>
                                     <div className="pm-color-list">

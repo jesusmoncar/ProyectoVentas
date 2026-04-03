@@ -250,7 +250,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="checkout__item-info">
                     <h4>{item.product.name}</h4>
-                    <span>{item.variant.colorName || item.variant.color} — {item.variant.size}</span>
+                    <span>{item.variant.colorName || hexToColorName(item.variant.color) || item.variant.color} — {item.variant.size}</span>
                     <span>Cantidad: {item.quantity}</span>
                   </div>
                   <span className="checkout__item-price">€{(price * item.quantity).toFixed(2)}</span>

@@ -2,6 +2,7 @@ import { FiX, FiPlus, FiMinus, FiTrash2, FiShoppingBag, FiArrowRight } from 'rea
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { getImageUrl } from '../api/api';
+import { hexToColorName } from '../utils/colorUtils';
 
 export default function CartDrawer() {
   const { items, isOpen, closeCart, totalItems, totalPrice, updateQuantity, removeFromCart } = useCart();
@@ -56,7 +57,7 @@ export default function CartDrawer() {
                       <p className="cart-item__variant">
                         {item.variant.color && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                           <span className="cart-item__color-dot" style={{ backgroundColor: item.variant.color }} />
-                          {item.variant.colorName || item.variant.color}{item.variant.size ? ` / ${item.variant.size}` : ''}
+                          {item.variant.colorName || hexToColorName(item.variant.color) || item.variant.color}{item.variant.size ? ` / ${item.variant.size}` : ''}
                         </span>}
                       </p>
                       <div className="cart-item__bottom">

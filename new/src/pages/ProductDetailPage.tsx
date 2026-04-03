@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FiShoppingBag, FiHeart, FiChevronLeft, FiChevronRight, FiCheck, FiTruck, FiRefreshCw, FiShield } from 'react-icons/fi';
 import api, { getImageUrl } from '../api/api';
+import { hexToColorName } from '../utils/colorUtils';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import type { Product, ProductVariant } from '../types';
@@ -186,7 +187,7 @@ export default function ProductDetailPage() {
             <div className="product-detail__section">
               <h3>Color{selectedVariant?.color && (
                 <span style={{ fontWeight: 400, fontSize: '0.95rem', marginLeft: '8px', color: 'var(--text-muted)' }}>
-                  — {uniqueColorVariants.find(v => v.color === selectedVariant.color)?.colorName || selectedVariant.color}
+                  — {uniqueColorVariants.find(v => v.color === selectedVariant.color)?.colorName || hexToColorName(selectedVariant.color) || selectedVariant.color}
                 </span>
               )}</h3>
               <div className="product-detail__colors">
