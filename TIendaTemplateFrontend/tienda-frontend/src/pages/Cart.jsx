@@ -52,7 +52,11 @@ export default function Cart() {
         saveCart([]);
     };
 
-    const subtotal = items.reduce((s, x) => s + x.basePrice * x.quantity, 0);
+    const subtotal = items.reduce((s, x) => {
+        const discount = x.discountPercent ?? 0;
+        const price = x.basePrice * (1 - discount / 100);
+        return s + price * x.quantity;
+    }, 0);
     const shipping = subtotal === 0 ? 0 : subtotal >= 50 ? 0 : 4.99;
     const total = subtotal + shipping;
 
@@ -114,7 +118,7 @@ export default function Cart() {
                                                 {item.variantLabel && (
                                                     <span className="cart-item__variant">{item.variantLabel}</span>
                                                 )}
-                                                <span className="cart-item__unit-price">{item.basePrice?.toFixed(2)} € / ud.</span>
+                                                <span className="cart-item__unit-price">{(item.basePrice * (1 - (item.discountPercent ?? 0) / 100)).toFixed(2)} € / ud.</span>
                                             </div>
                                         </div>
 
@@ -130,7 +134,7 @@ export default function Cart() {
 
                                         <div className="cart-item__right">
                                             <span className="cart-item__total">
-                                                {(item.basePrice * item.quantity).toFixed(2)} €
+                                                {(item.basePrice * (1 - (item.discountPercent ?? 0) / 100) * item.quantity).toFixed(2)} €
                                             </span>
                                             <button className="cart-item__remove" onClick={() => remove(item.id)} aria-label="Eliminar">
                                                 <Trash2 size={16} />

@@ -38,7 +38,9 @@ export default function CartDrawer() {
             <ul className="cart-drawer__items">
               {items.map(item => {
                 const imageUrl = getImageUrl(item.product.images?.[0], item.product.id);
-                const price = item.variant.priceOverride ?? item.product.basePrice;
+                const basePrice = item.variant.priceOverride ?? item.product.basePrice;
+                const discount = item.product.discountPercent ?? 0;
+                const price = basePrice * (1 - discount / 100);
 
                 return (
                   <li key={`${item.product.id}-${item.variant.id}`} className="cart-item">
@@ -54,7 +56,7 @@ export default function CartDrawer() {
                       <p className="cart-item__variant">
                         {item.variant.color && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                           <span className="cart-item__color-dot" style={{ backgroundColor: item.variant.color }} />
-                          {item.variant.size}
+                          {item.variant.colorName || item.variant.color}{item.variant.size ? ` / ${item.variant.size}` : ''}
                         </span>}
                       </p>
                       <div className="cart-item__bottom">

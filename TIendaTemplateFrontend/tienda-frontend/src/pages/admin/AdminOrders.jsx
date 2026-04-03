@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Package, Calendar, MapPin, ChevronDown, ChevronUp, Loader2, ClipboardList } from 'lucide-react';
+import { Package, Calendar, MapPin, ChevronDown, ChevronUp, Loader2, ClipboardList, Search, X } from 'lucide-react';
 import api from '../../api/axios';
+import { formatVariantLabel } from '../../utils/colorUtils';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import './AdminOrders.css';
@@ -37,6 +38,7 @@ export default function AdminOrders() {
     const [expanded, setExpanded] = useState(null);
     const [updatingStatus, setUpdatingStatus] = useState(null);
     const [filter, setFilter] = useState('ALL');
+    const [search, setSearch] = useState('');
 
     useEffect(() => {
         if (!isAdmin()) { window.location.href = '/'; return; }
@@ -63,7 +65,17 @@ export default function AdminOrders() {
         }
     };
 
-    const filtered = filter === 'ALL' ? orders : orders.filter(o => o.status === filter);
+    const filtered = orders
+        .filter(o => filter === 'ALL' || o.status === filter)
+        .filter(o => {
+            if (!search.trim()) return true;
+            const q = search.toLowerCase();
+            return (
+                String(o.numeroPedido).includes(q) ||
+                o.shippingAddress?.toLowerCase().includes(q) ||
+                o.items?.some(i => i.product?.name?.toLowerCase().includes(q))
+            );
+        });
 
     const counts = {
         ALL: orders.length,
@@ -91,6 +103,27 @@ export default function AdminOrders() {
                 </div>
 
                 <div className="ao-content">
+
+                    {/* Search bar */}
+                    {!loading && !error && (
+                        <div className="ao-search-wrap">
+                            <div className="ao-search-inner">
+                                <Search size={15} className="ao-search-icon" />
+                                <input
+                                    className="ao-search"
+                                    type="text"
+                                    placeholder="Buscar pedido, dirección o producto..."
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                />
+                                {search && (
+                                    <button className="ao-search-clear" onClick={() => setSearch('')} aria-label="Limpiar">
+                                        <X size={12} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Filter tabs */}
                     {!loading && !error && (
@@ -120,7 +153,7 @@ export default function AdminOrders() {
                     {!loading && !error && filtered.length === 0 && (
                         <div className="ao-state">
                             <ClipboardList size={40} color="#d1d5db" />
-                            <p>No hay pedidos pendientes{filter !== 'ALL' ? ` con estado "${STATUS_LABEL[filter]}"` : ''}.</p>
+                            <p>{search.trim() ? `Sin resultados para "${search}".` : `No hay pedidos${filter !== 'ALL' ? ` con estado "${STATUS_LABEL[filter]}"` : ''}.`}</p>
                         </div>
                     )}
 
@@ -200,7 +233,7 @@ export default function AdminOrders() {
                                                                 </span>
                                                                 {item.variantLabel && (
                                                                     <span className="ao-detail__item-variant">
-                                                                        {item.variantLabel}
+                                                                        {formatVariantLabel(item.variantLabel)}
                                                                     </span>
                                                                 )}
                                                             </div>

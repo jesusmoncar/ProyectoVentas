@@ -1,21 +1,23 @@
-import { useState, useEffect } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiImage, FiSearch, FiPackage, FiArrowLeft, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { useState, useEffect, useRef } from 'react';
+import { FiPlus, FiEdit2, FiTrash2, FiImage, FiSearch, FiPackage, FiArrowLeft, FiChevronLeft, FiChevronRight, FiX } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import api, { getImageUrl } from '../api/api';
 import type { Product } from '../types';
 import toast from 'react-hot-toast';
+
+import { hexToColorName } from '../utils/colorUtils';
 
 interface ProductForm {
   name: string;
   description: string;
   basePrice: string;
   discountPercent: string;
-  variants: { color: string; size: string; stock: string; priceOverride: string }[];
+  variants: { color: string; colorName: string; size: string; stock: string; priceOverride: string }[];
 }
 
 const emptyForm: ProductForm = {
   name: '', description: '', basePrice: '', discountPercent: '0',
-  variants: [{ color: '', size: '', stock: '', priceOverride: '' }]
+  variants: [{ color: '', colorName: '', size: '', stock: '', priceOverride: '' }]
 };
 
 export default function AdminProductsPage() {
@@ -31,6 +33,12 @@ export default function AdminProductsPage() {
   const [globalDiscountValue, setGlobalDiscountValue] = useState('0');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
+
+  const [pendingImages, setPendingImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<any[]>([]);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchProducts = () => {
     api.get<Product[]>('/products')
@@ -49,7 +57,10 @@ export default function AdminProductsPage() {
   const paginatedProducts = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const openCreate = () => {
-    setForm(emptyForm); setEditingId(null); setShowForm(true);
+    setForm(emptyForm);
+    setEditingId(null);
+    setShowForm(true);
+    setPendingImages([]); setImagePreviews([]); setExistingImages([]);
   };
 
   const openEdit = (product: Product) => {
@@ -60,17 +71,18 @@ export default function AdminProductsPage() {
       discountPercent: String(product.discountPercent || 0),
       variants: product.variants.length > 0
         ? product.variants.map(v => ({
-            color: v.color || '', size: v.size || '',
+            color: v.color || '', colorName: v.colorName || '', size: v.size || '',
             stock: String(v.stock), priceOverride: v.priceOverride ? String(v.priceOverride) : ''
           }))
-        : [{ color: '', size: '', stock: '', priceOverride: '' }]
+        : [{ color: '', colorName: '', size: '', stock: '', priceOverride: '' }]
     });
     setEditingId(product.id);
     setShowForm(true);
+    setExistingImages(product.images || []); setPendingImages([]); setImagePreviews([]);
   };
 
   const addVariant = () => {
-    setForm(f => ({ ...f, variants: [...f.variants, { color: '', size: '', stock: '', priceOverride: '' }] }));
+    setForm(f => ({ ...f, variants: [...f.variants, { color: '', colorName: '', size: '', stock: '', priceOverride: '' }] }));
   };
 
   const removeVariant = (idx: number) => {
@@ -82,6 +94,16 @@ export default function AdminProductsPage() {
       ...f,
       variants: f.variants.map((v, i) => i === idx ? { ...v, [field]: value } : v)
     }));
+  };
+
+  const handleImageFiles = (files: FileList | File[]) => {
+    const arr = Array.from(files);
+    setPendingImages(prev => [...prev, ...arr]);
+    arr.forEach(f => {
+      const reader = new FileReader();
+      reader.onload = e => setImagePreviews(prev => [...prev, e.target?.result as string]);
+      reader.readAsDataURL(f);
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -96,7 +118,7 @@ export default function AdminProductsPage() {
       variants: form.variants
         .filter(v => v.size || v.color)
         .map(v => ({
-          color: v.color, size: v.size,
+          color: v.color, colorName: v.colorName || null, size: v.size,
           stock: parseInt(v.stock) || 0,
           priceOverride: v.priceOverride ? parseFloat(v.priceOverride) : null
         }))
@@ -104,13 +126,25 @@ export default function AdminProductsPage() {
 
     setSubmitting(true);
     try {
+      let productId: number;
       if (editingId) {
         await api.put(`/products/${editingId}`, payload);
+        productId = editingId;
         toast.success('Producto actualizado');
       } else {
-        await api.post('/products', payload);
+        const res = await api.post<{ id: number }>('/products', payload);
+        productId = res.data.id;
         toast.success('Producto creado');
       }
+
+      if (pendingImages.length > 0) {
+        const fd = new FormData();
+        pendingImages.forEach(f => fd.append('files', f));
+        await api.post(`/products/${productId}/images`, fd, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      }
+
       setShowForm(false);
       fetchProducts();
     } catch (err: any) {
@@ -140,20 +174,6 @@ export default function AdminProductsPage() {
       setDeleteConfirm(null);
     } catch {
       toast.error('Error al eliminar');
-    }
-  };
-
-  const handleImageUpload = async (productId: number, files: FileList) => {
-    const formData = new FormData();
-    Array.from(files).forEach(f => formData.append('files', f));
-    try {
-      await api.post(`/products/${productId}/images`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      toast.success('Imágenes subidas');
-      fetchProducts();
-    } catch {
-      toast.error('Error al subir imágenes');
     }
   };
 
@@ -187,75 +207,156 @@ export default function AdminProductsPage() {
       {showForm && (
         <div className="admin__modal-overlay" onClick={() => setShowForm(false)}>
           <div className="admin__modal admin__modal--product" onClick={e => e.stopPropagation()}>
-            <h2>{editingId ? 'Editar Producto' : 'Nuevo Producto'}</h2>
-            <form className="admin__form" onSubmit={handleSubmit}>
-              <div className="admin__form-group">
-                <label className="admin__form-label">Nombre *</label>
-                <input className="admin__form-input" placeholder="Nombre del producto" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-              </div>
-              <div className="admin__form-group">
-                <label className="admin__form-label">Descripción</label>
-                <textarea
-                  className="admin__form-input"
-                  placeholder="Descripción del producto"
-                  value={form.description}
-                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                  rows={3}
-                />
-              </div>
-              <div className="admin__form-group">
-                <input className="admin__form-input" type="number" step="0.01" placeholder="29.99" value={form.basePrice} onChange={e => setForm(f => ({ ...f, basePrice: e.target.value }))} />
-              </div>
-              <div className="admin__form-group">
-                <label className="admin__form-label">Descuento (%)</label>
-                <input className="admin__form-input" type="number" min="0" max="100" placeholder="0" value={form.discountPercent} onChange={e => setForm(f => ({ ...f, discountPercent: e.target.value }))} />
-              </div>
 
-              <div className="admin__variants-section">
-                <div className="admin__variants-header">
-                  <h3>Variantes</h3>
-                  <button type="button" className="btn btn--ghost" onClick={addVariant}><FiPlus size={14} /> Añadir</button>
+            {/* Modal header */}
+            <div className="apf-header">
+              <div className="apf-header__icon">
+                <FiPackage size={22} />
+              </div>
+              <div>
+                <h2 className="apf-header__title">{editingId ? 'Editar Producto' : 'Nuevo Producto'}</h2>
+                <p className="apf-header__sub">{editingId ? 'Modifica los datos del producto' : 'Completa los datos para crear el producto'}</p>
+              </div>
+              <button className="apf-close" onClick={() => setShowForm(false)}><FiX size={20} /></button>
+            </div>
+
+            <form id="apf-form" className="apf-form" onSubmit={handleSubmit}>
+
+              {/* Section: Info */}
+              <div className="apf-section">
+                <h3 className="apf-section__title"><FiPackage size={15} /> Información básica</h3>
+                <div className="apf-field">
+                  <label className="apf-label">Nombre *</label>
+                  <input className="apf-input" placeholder="Nombre del producto" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
                 </div>
-                <div className="admin__variant-grid-header">
-                  <span>Color</span>
-                  <span>Talla</span>
-                  <span>Stock</span>
-                  <span>Precio €</span>
-                  <span></span>
+                <div className="apf-field">
+                  <label className="apf-label">Descripción</label>
+                  <textarea className="apf-input apf-textarea" placeholder="Descripción del producto..." value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} />
                 </div>
-                {form.variants.map((v, idx) => (
-                  <div key={idx} className="admin__variant-row">
-                    <div className="admin__variant-color-input">
-                      <div className="admin__color-btn" style={{ backgroundColor: v.color || '#ffffff' }}>
-                        <input 
-                          type="color" 
-                          value={v.color?.startsWith('#') ? v.color : '#ffffff'} 
-                          onChange={e => updateVariant(idx, 'color', e.target.value)} 
-                        />
-                      </div>
-                      <input 
-                        placeholder="#HEX" 
-                        value={v.color} 
-                        onChange={e => updateVariant(idx, 'color', e.target.value)} 
-                      />
-                    </div>
-                    <input placeholder="ej: M, L..." value={v.size} onChange={e => updateVariant(idx, 'size', e.target.value)} />
-                    <input type="number" placeholder="0" value={v.stock} onChange={e => updateVariant(idx, 'stock', e.target.value)} />
-                    <input type="number" step="0.01" placeholder="Override" value={v.priceOverride} onChange={e => updateVariant(idx, 'priceOverride', e.target.value)} />
-                    {form.variants.length > 1 && (
-                      <button type="button" className="admin__variant-remove" onClick={() => removeVariant(idx)} title="Eliminar variante"><FiTrash2 size={16} /></button>
-                    )}
+                <div className="apf-grid-2">
+                  <div className="apf-field">
+                    <label className="apf-label">Precio base (€) *</label>
+                    <input className="apf-input" type="number" step="0.01" placeholder="29.99" value={form.basePrice} onChange={e => setForm(f => ({ ...f, basePrice: e.target.value }))} />
                   </div>
-                ))}
+                  <div className="apf-field">
+                    <label className="apf-label">Descuento (%)</label>
+                    <input className="apf-input" type="number" min="0" max="100" placeholder="0" value={form.discountPercent} onChange={e => setForm(f => ({ ...f, discountPercent: e.target.value }))} />
+                  </div>
+                </div>
               </div>
 
-              <div className="admin__form-actions">
-                <button type="button" className="admin__btn-cancel" onClick={() => setShowForm(false)}>Cancelar</button>
-                <button type="submit" className="admin__btn-submit" disabled={submitting}>
-                  {submitting ? 'Guardando...' : editingId ? 'Actualizar' : 'Crear Producto'}
-                </button>
+              {/* Section: Images */}
+              <div className="apf-section">
+                <h3 className="apf-section__title"><FiImage size={15} /> Fotos del producto</h3>
+
+                {/* Existing images */}
+                {existingImages.length > 0 && (
+                  <div className="apf-images-row">
+                    {existingImages.map((img, i) => (
+                      <div key={i} className="apf-thumb apf-thumb--existing">
+                        <img src={getImageUrl(img, editingId ?? undefined)} alt="" />
+                        <span className="apf-thumb__tag">Actual</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Drop zone */}
+                <div
+                  className={`apf-dropzone ${dragOver ? 'apf-dropzone--over' : ''}`}
+                  onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={e => { e.preventDefault(); setDragOver(false); handleImageFiles(e.dataTransfer.files); }}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <FiImage size={28} />
+                  <p className="apf-dropzone__text">Arrastra fotos aquí o <span>haz clic para seleccionar</span></p>
+                  <p className="apf-dropzone__hint">PNG, JPG hasta 5MB</p>
+                  <input ref={fileInputRef} type="file" multiple accept="image/*" hidden onChange={e => e.target.files && handleImageFiles(e.target.files)} />
+                </div>
+
+                {/* New image previews */}
+                {imagePreviews.length > 0 && (
+                  <div className="apf-images-row">
+                    {imagePreviews.map((src, i) => (
+                      <div key={i} className="apf-thumb apf-thumb--new">
+                        <img src={src} alt="" />
+                        <button type="button" className="apf-thumb__remove" onClick={() => {
+                          setImagePreviews(prev => prev.filter((_, j) => j !== i));
+                          setPendingImages(prev => prev.filter((_, j) => j !== i));
+                        }}><FiX size={12} /></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
+
+              {/* Section: Variants */}
+              <div className="apf-section">
+                <div className="apf-section__header">
+                  <h3 className="apf-section__title"><span>🎨</span> Variantes</h3>
+                  <button type="button" className="apf-add-variant" onClick={addVariant}><FiPlus size={14} /> Añadir variante</button>
+                </div>
+
+                {form.variants.length === 0 ? (
+                  <p className="apf-variants-empty">Sin variantes — el producto se vende sin opciones de color/talla.</p>
+                ) : (
+                  <div className="apf-variants">
+                    {form.variants.map((v, idx) => (
+                      <div key={idx} className="apf-variant-card">
+                        <div className="apf-variant-card__num">{idx + 1}</div>
+                        <div className="apf-variant-card__fields">
+                          {/* Color row */}
+                          <div className="apf-variant-color-row">
+                            <div className="apf-color-swatch" style={{ backgroundColor: v.color || '#ffffff' }}>
+                              <input type="color" value={v.color?.startsWith('#') ? v.color : '#ffffff'} onChange={e => {
+                                const hex = e.target.value;
+                                setForm(f => ({
+                                  ...f,
+                                  variants: f.variants.map((vv, i) =>
+                                    i === idx ? { ...vv, color: hex, colorName: hexToColorName(hex) } : vv
+                                  )
+                                }));
+                              }} title="Elegir color" />
+                            </div>
+                            <div className="apf-field apf-field--inline">
+                              <label className="apf-label-sm">Hex</label>
+                              <input className="apf-input apf-input--sm apf-input--mono" placeholder="#000000" value={v.color} onChange={e => updateVariant(idx, 'color', e.target.value)} />
+                            </div>
+                          </div>
+                          {/* Size/Stock/Price row */}
+                          <div className="apf-variant-attrs-row">
+                            <div className="apf-field apf-field--inline">
+                              <label className="apf-label-sm">Talla</label>
+                              <input className="apf-input apf-input--sm" placeholder="M, L, XL..." value={v.size} onChange={e => updateVariant(idx, 'size', e.target.value)} />
+                            </div>
+                            <div className="apf-field apf-field--inline">
+                              <label className="apf-label-sm">Stock</label>
+                              <input className="apf-input apf-input--sm" type="number" placeholder="0" value={v.stock} onChange={e => updateVariant(idx, 'stock', e.target.value)} />
+                            </div>
+                            <div className="apf-field apf-field--inline">
+                              <label className="apf-label-sm">Precio especial €</label>
+                              <input className="apf-input apf-input--sm" type="number" step="0.01" placeholder="—" value={v.priceOverride} onChange={e => updateVariant(idx, 'priceOverride', e.target.value)} />
+                            </div>
+                          </div>
+                        </div>
+                        {form.variants.length > 1 && (
+                          <button type="button" className="apf-variant-remove" onClick={() => removeVariant(idx)} title="Eliminar"><FiTrash2 size={15} /></button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
             </form>
+
+            <div className="apf-actions">
+              <button type="button" className="admin__btn-cancel" onClick={() => setShowForm(false)}>Cancelar</button>
+              <button type="submit" form="apf-form" className="admin__btn-submit" disabled={submitting}>
+                {submitting ? 'Guardando...' : editingId ? '✓ Guardar cambios' : '+ Crear Producto'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -322,11 +423,6 @@ export default function AdminProductsPage() {
                         <button className="admin__action-btn" title="Editar" onClick={() => openEdit(product)}>
                           <FiEdit2 size={16} />
                         </button>
-                        <label className="admin__action-btn" title="Subir imágenes">
-                          <FiImage size={16} />
-                          <input type="file" multiple accept="image/*" hidden
-                            onChange={e => e.target.files && handleImageUpload(product.id, e.target.files)} />
-                        </label>
                         <button className="admin__action-btn admin__action-btn--danger" title="Eliminar" onClick={() => setDeleteConfirm({ id: product.id, name: product.name })}>
                           <FiTrash2 size={16} />
                         </button>
@@ -340,14 +436,14 @@ export default function AdminProductsPage() {
 
           {totalPages > 1 && (
             <div className="admin__pagination">
-              <button 
-                className="admin__pagination-btn" 
+              <button
+                className="admin__pagination-btn"
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage(prev => prev - 1)}
               >
                 <FiChevronLeft size={18} />
               </button>
-              
+
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                 <button
                   key={page}
@@ -358,8 +454,8 @@ export default function AdminProductsPage() {
                 </button>
               ))}
 
-              <button 
-                className="admin__pagination-btn" 
+              <button
+                className="admin__pagination-btn"
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage(prev => prev + 1)}
               >
@@ -389,6 +485,7 @@ export default function AdminProductsPage() {
           </div>
         </div>
       )}
+
       {/* Global Discount Modal */}
       {globalDiscountShow && (
         <div className="admin__modal-overlay" onClick={() => setGlobalDiscountShow(false)}>
@@ -399,13 +496,13 @@ export default function AdminProductsPage() {
             </p>
             <div className="admin__form-group">
               <label className="admin__form-label">Porcentaje de Descuento (%)</label>
-              <input 
-                className="admin__form-input" 
-                type="number" 
-                min="0" 
-                max="100" 
-                value={globalDiscountValue} 
-                onChange={e => setGlobalDiscountValue(e.target.value)} 
+              <input
+                className="admin__form-input"
+                type="number"
+                min="0"
+                max="100"
+                value={globalDiscountValue}
+                onChange={e => setGlobalDiscountValue(e.target.value)}
               />
             </div>
             <div className="admin__form-actions">

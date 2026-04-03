@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AlertTriangle, Calendar, Package, ChevronDown, ChevronUp, Loader2, CheckCircle, XCircle, RotateCcw, User } from 'lucide-react';
 import api from '../../api/axios';
+import { formatVariantLabel } from '../../utils/colorUtils';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import './AdminIncidencias.css';
@@ -245,7 +246,7 @@ export default function AdminIncidencias() {
                                                                     {item.product?.name ?? `Producto #${item.product?.id}`}
                                                                 </span>
                                                                 {item.variantLabel && (
-                                                                    <span className="ai-detail__item-variant">{item.variantLabel}</span>
+                                                                    <span className="ai-detail__item-variant">{formatVariantLabel(item.variantLabel)}</span>
                                                                 )}
                                                             </div>
                                                             <span className="ai-detail__item-qty">× {item.quantity}</span>

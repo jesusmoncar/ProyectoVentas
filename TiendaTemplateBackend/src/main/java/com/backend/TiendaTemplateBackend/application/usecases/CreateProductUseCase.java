@@ -32,6 +32,7 @@ public class CreateProductUseCase {
                 ProductVariant variant = new ProductVariant();
                 variant.setSku(generateSku(request.getName(), v.getColor(), v.getSize()));
                 variant.setColor(v.getColor());
+                variant.setColorName(v.getColorName());
                 variant.setSize(v.getSize());
                 variant.setStock(v.getStock());
                 variant.setPriceOverride(v.getPriceOverride());

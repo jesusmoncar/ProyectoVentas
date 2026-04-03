@@ -20,6 +20,7 @@ public class ProductVariantEntity {
     private String sku;
 
     private String color;
+    private String colorName;
     private String size;
     private Integer stock;
     private Double priceOverride;

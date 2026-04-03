@@ -36,7 +36,9 @@ export default function CatalogPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const allColors = [...new Set(products.flatMap((p: Product) => p.variants.map(v => v.color)).filter(Boolean))];
+  const allColors = products
+    .flatMap((p: Product) => p.variants.filter(v => v.color))
+    .filter((v, i, arr) => arr.findIndex(x => x.color === v.color) === i);
   const allSizes = [...new Set(products.flatMap((p: Product) => p.variants.map(v => v.size)).filter(Boolean))];
 
   const filtered = products
@@ -136,13 +138,13 @@ export default function CatalogPage() {
           <div className="filter-group">
             <h4>Colores</h4>
             <div className="filter-group__colors">
-              {allColors.map(color => (
+              {allColors.map(v => (
                 <button
-                  key={color as string}
-                  className={`filter-color ${selectedColors.includes(color as string) ? 'filter-color--active' : ''}`}
-                  style={{ backgroundColor: color as string }}
-                  onClick={() => toggleColor(color as string)}
-                  title={color as string}
+                  key={v.color}
+                  className={`filter-color ${selectedColors.includes(v.color) ? 'filter-color--active' : ''}`}
+                  style={{ backgroundColor: v.color }}
+                  onClick={() => toggleColor(v.color)}
+                  title={v.colorName || v.color}
                 />
               ))}
               {allColors.length === 0 && <span className="filter-group__empty">No hay colores</span>}

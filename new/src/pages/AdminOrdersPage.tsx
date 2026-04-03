@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import api, { formatAddress } from '../api/api';
 import type { Order } from '../types';
 import toast from 'react-hot-toast';
+import { formatVariantLabel } from '../utils/colorUtils';
 
 const statusOptions = [
   { value: 'PENDING', label: 'Pendiente', icon: FiClock, color: '#FFF9C4', textColor: '#8B7355' },
@@ -519,7 +520,7 @@ export default function AdminOrdersPage() {
                       const qty = item.quantity || 0;
                       const price = item.price || item.unitPrice || 0;
                       const productName = item.product?.name || item.productName || 'Producto desconocido';
-                      const variant = item.variantLabel || 'Estándar';
+                      const variant = formatVariantLabel(item.variantLabel ?? '') || 'Estándar';
                       
                       return (
                         <tr key={idx}>

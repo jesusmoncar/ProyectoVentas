@@ -19,7 +19,9 @@ export default function ProductCard({ product, index = 0 }: Props) {
   const liked = isFavorite(product.id);
   const imageUrl = getImageUrl(product.images?.[0], product.id);
 
-  const uniqueColors = [...new Set(product.variants.map(v => v.color))].filter(Boolean);
+  const uniqueColorVariants = product.variants
+    .filter(v => v.color)
+    .filter((v, i, arr) => arr.findIndex(x => x.color === v.color) === i);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -81,18 +83,18 @@ export default function ProductCard({ product, index = 0 }: Props) {
         <div className="product-card__info">
           <h3 className="product-card__name">{product.name}</h3>
 
-          {uniqueColors.length > 0 && (
+          {uniqueColorVariants.length > 0 && (
             <div className="product-card__colors">
-              {uniqueColors.slice(0, 5).map(color => (
+              {uniqueColorVariants.slice(0, 5).map(v => (
                 <span
-                  key={color}
+                  key={v.color}
                   className="product-card__color-dot"
-                  style={{ backgroundColor: color }}
-                  title={color}
+                  style={{ backgroundColor: v.color }}
+                  title={v.colorName || v.color}
                 />
               ))}
-              {uniqueColors.length > 5 && (
-                <span className="product-card__color-more">+{uniqueColors.length - 5}</span>
+              {uniqueColorVariants.length > 5 && (
+                <span className="product-card__color-more">+{uniqueColorVariants.length - 5}</span>
               )}
             </div>
           )}

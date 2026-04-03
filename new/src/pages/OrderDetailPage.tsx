@@ -4,6 +4,7 @@ import { FiArrowLeft, FiPackage, FiMapPin, FiTruck, FiCheckCircle, FiClock, FiAl
 import api, { getImageUrl, formatAddress } from '../api/api';
 import type { Order } from '../types';
 import toast from 'react-hot-toast';
+import { formatVariantLabel } from '../utils/colorUtils';
 
 export default function OrderDetailPage() {
   const { numeroPedido } = useParams();
@@ -101,7 +102,7 @@ export default function OrderDetailPage() {
                   </div>
                   <div className="item-info">
                     <h4>{item.product?.name || 'Producto'}</h4>
-                    <p className="variant">{item.variantLabel || 'N/A'}</p>
+                    <p className="variant">{formatVariantLabel(item.variantLabel ?? '') || 'N/A'}</p>
                     <div className="item-price-qty">
                       <span>{item.quantity} x €{(item.price || 0).toFixed(2)}</span>
                     </div>
@@ -189,7 +190,7 @@ export default function OrderDetailPage() {
              <h3>Seguimiento del Envío</h3>
              <div className="address-box">
                <FiTruck />
-               <p>{order.trackingNumber || 'ID seguimiento prueba'}</p>
+               <p>{order.trackingNumber || 'Aún sin número de seguimiento'}</p>
              </div>
              {order.deliveryMode === 'SHIPPING' && (
                <div style={{ marginTop: '12px' }}>
@@ -204,7 +205,7 @@ export default function OrderDetailPage() {
                      Ver Etiqueta de Envío
                    </a>
                  ) : (
-                   <p style={{ fontSize: '0.85rem', color: '#666', fontStyle: 'italic' }}>etiqueta de envio prueba</p>
+                   <p style={{ fontSize: '0.85rem', color: '#666', fontStyle: 'italic' }}>La etiqueta estará disponible cuando el pedido sea procesado.</p>
                  )}
                </div>
              )}

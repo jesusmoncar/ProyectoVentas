@@ -36,6 +36,7 @@ public class UpdateProductUseCase {
                     com.backend.TiendaTemplateBackend.domain.model.ProductVariant variant = new com.backend.TiendaTemplateBackend.domain.model.ProductVariant();
                     variant.setSku(generateSku(request.getName(), vReq.getColor(), vReq.getSize()));
                     variant.setColor(vReq.getColor());
+                    variant.setColorName(vReq.getColorName());
                     variant.setSize(vReq.getSize());
                     variant.setStock(vReq.getStock());
                     variant.setPriceOverride(vReq.getPriceOverride());

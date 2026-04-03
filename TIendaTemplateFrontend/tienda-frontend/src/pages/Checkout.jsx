@@ -32,7 +32,11 @@ export default function Checkout() {
     const [errors, setErrors] = useState({});
 
     const items = readCart();
-    const subtotal = items.reduce((s, x) => s + x.basePrice * x.quantity, 0);
+    const subtotal = items.reduce((s, x) => {
+        const discount = x.discountPercent ?? 0;
+        const price = x.basePrice * (1 - discount / 100);
+        return s + price * x.quantity;
+    }, 0);
     const shipping = subtotal > 0 && subtotal < 50 ? 4.99 : 0;
     const total = subtotal + shipping;
 
@@ -295,7 +299,7 @@ export default function Checkout() {
                                         <span className="co-summary__item-qty">×{item.quantity}</span>
                                     </span>
                                     <span className="co-summary__item-price">
-                                        {(item.basePrice * item.quantity).toFixed(2)} €
+                                        {(item.basePrice * (1 - (item.discountPercent ?? 0) / 100) * item.quantity).toFixed(2)} €
                                     </span>
                                 </div>
                             ))}

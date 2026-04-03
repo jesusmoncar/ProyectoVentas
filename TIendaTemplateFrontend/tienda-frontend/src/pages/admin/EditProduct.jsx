@@ -7,7 +7,7 @@ import Footer from '../../components/Footer';
 import '../admin/CreateProduct.css';
 
 const MAX_IMAGES = 5;
-const emptyVariant = () => ({ color: '', size: '', stock: '', priceOverride: '' });
+const emptyVariant = () => ({ color: '', colorName: '', size: '', stock: '', priceOverride: '' });
 
 function isAdmin() {
     try {
@@ -141,6 +141,7 @@ export default function EditProduct() {
             .filter(v => v.color || v.size || v.stock)
             .map(v => ({
                 color: v.color || null,
+                colorName: v.colorName || null,
                 size: v.size || null,
                 stock: v.stock !== '' ? Number(v.stock) : 0,
                 priceOverride: v.priceOverride !== '' ? Number(v.priceOverride) : null,
@@ -295,6 +296,11 @@ export default function EditProduct() {
                                                         onChange={e => updateVariant(i, 'color', e.target.value)} 
                                                     />
                                                 </div>
+                                            </div>
+                                            <div className="cp-field">
+                                                <label className="cp-label">Nombre color</label>
+                                                <input type="text" className="cp-input" placeholder="ej: rojo"
+                                                    value={v.colorName || ''} onChange={e => updateVariant(i, 'colorName', e.target.value)} />
                                             </div>
                                             <div className="cp-field">
                                                 <label className="cp-label">Talla</label>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Package, Calendar, MapPin, ChevronDown, ChevronUp, Loader2, ClipboardList, X, AlertTriangle, RotateCcw } from 'lucide-react';
+import { Package, Calendar, MapPin, ChevronDown, ChevronUp, Loader2, ClipboardList, X, AlertTriangle, RotateCcw, Search } from 'lucide-react';
 import api from '../api/axios';
+import { formatVariantLabel } from '../utils/colorUtils';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import './MyOrders.css';
@@ -40,6 +41,7 @@ export default function MyOrders() {
     const [error, setError] = useState('');
     const [expanded, setExpanded] = useState(null);
     const [filter, setFilter] = useState('ALL');
+    const [search, setSearch] = useState('');
 
     // Cancel confirmation state
     const [cancelTarget, setCancelTarget] = useState(null);
@@ -91,7 +93,17 @@ export default function MyOrders() {
     const canCancel = (status) => status === 'PENDING' || status === 'SHIPPING';
     const canReturn = (status) => status === 'DELIVERED';
 
-    const filtered = filter === 'ALL' ? orders : orders.filter(o => o.status === filter);
+    const filtered = orders
+        .filter(o => filter === 'ALL' || o.status === filter)
+        .filter(o => {
+            if (!search.trim()) return true;
+            const q = search.toLowerCase();
+            return (
+                String(o.numeroPedido).includes(q) ||
+                o.shippingAddress?.toLowerCase().includes(q) ||
+                o.items?.some(i => i.product?.name?.toLowerCase().includes(q))
+            );
+        });
 
     const counts = {
         ALL: orders.length,
@@ -124,6 +136,26 @@ export default function MyOrders() {
                 </div>
 
                 <div className="mo-content">
+
+                    {!loading && !error && orders.length > 0 && (
+                        <div className="mo-search-wrap">
+                            <div className="mo-search-inner">
+                                <Search size={15} className="mo-search-icon" />
+                                <input
+                                    className="mo-search"
+                                    type="text"
+                                    placeholder="Buscar pedido, dirección o producto..."
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                />
+                                {search && (
+                                    <button className="mo-search-clear" onClick={() => setSearch('')} aria-label="Limpiar">
+                                        <X size={12} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {!loading && !error && orders.length > 0 && (
                         <div className="mo-filters">
@@ -161,7 +193,7 @@ export default function MyOrders() {
                     {!loading && !error && filtered.length === 0 && orders.length > 0 && (
                         <div className="mo-state">
                             <ClipboardList size={40} color="#d1d5db" />
-                            <p>No hay pedidos con estado "{STATUS_LABEL[filter]}".</p>
+                            <p>{search.trim() ? `Sin resultados para "${search}".` : `No hay pedidos con estado "${STATUS_LABEL[filter]}".`}</p>
                         </div>
                     )}
 
@@ -242,7 +274,7 @@ export default function MyOrders() {
                                                                     {item.product?.name ?? `Producto #${item.product?.id}`}
                                                                 </span>
                                                                 {item.variantLabel && (
-                                                                    <span className="mo-detail__item-variant">{item.variantLabel}</span>
+                                                                    <span className="mo-detail__item-variant">{formatVariantLabel(item.variantLabel)}</span>
                                                                 )}
                                                             </div>
                                                             <span className="mo-detail__item-qty">× {item.quantity}</span>

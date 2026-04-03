@@ -3,18 +3,19 @@ import { useParams, Link } from 'react-router-dom';
 import { FiShoppingBag, FiHeart, FiChevronLeft, FiChevronRight, FiCheck, FiTruck, FiRefreshCw, FiShield } from 'react-icons/fi';
 import api, { getImageUrl } from '../api/api';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 import type { Product, ProductVariant } from '../types';
 import toast from 'react-hot-toast';
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { addToCart } = useCart();
+  const { toggleFavorite, isFavorite } = useWishlist();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [liked, setLiked] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -58,7 +59,11 @@ export default function ProductDetailPage() {
     );
   }
 
-  const uniqueColors = [...new Set(product.variants.map(v => v.color))].filter(Boolean);
+  const liked = isFavorite(product.id);
+
+  const uniqueColorVariants = product.variants
+    .filter(v => v.color)
+    .filter((v, i, arr) => arr.findIndex(x => x.color === v.color) === i);
   const sizesForColor = selectedVariant
     ? product.variants.filter(v => v.color === selectedVariant.color)
     : product.variants;
@@ -136,7 +141,7 @@ export default function ProductDetailPage() {
             )}
             <button
               className={`product-detail__like ${liked ? 'product-card__like--active' : ''}`}
-              onClick={() => setLiked(!liked)}
+              onClick={() => toggleFavorite(product)}
             >
               <FiHeart size={22} />
             </button>
@@ -177,19 +182,23 @@ export default function ProductDetailPage() {
           <p className="product-detail__description">{product.description}</p>
 
           {/* Colors */}
-          {uniqueColors.length > 0 && (
+          {uniqueColorVariants.length > 0 && (
             <div className="product-detail__section">
-              <h3>Color</h3>
+              <h3>Color{selectedVariant?.color && (
+                <span style={{ fontWeight: 400, fontSize: '0.95rem', marginLeft: '8px', color: 'var(--text-muted)' }}>
+                  — {uniqueColorVariants.find(v => v.color === selectedVariant.color)?.colorName || selectedVariant.color}
+                </span>
+              )}</h3>
               <div className="product-detail__colors">
-                {uniqueColors.map(color => (
+                {uniqueColorVariants.map(v => (
                   <button
-                    key={color}
-                    className={`product-detail__color-btn ${selectedVariant?.color === color ? 'product-detail__color-btn--active' : ''}`}
-                    style={{ backgroundColor: color }}
-                    onClick={() => handleColorSelect(color)}
-                    title={color}
+                    key={v.color}
+                    className={`product-detail__color-btn ${selectedVariant?.color === v.color ? 'product-detail__color-btn--active' : ''}`}
+                    style={{ backgroundColor: v.color }}
+                    onClick={() => handleColorSelect(v.color)}
+                    title={v.colorName || v.color}
                   >
-                    {selectedVariant?.color === color && <FiCheck size={16} />}
+                    {selectedVariant?.color === v.color && <FiCheck size={16} />}
                   </button>
                 ))}
               </div>

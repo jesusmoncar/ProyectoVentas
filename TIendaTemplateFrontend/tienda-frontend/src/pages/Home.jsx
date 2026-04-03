@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Search, SlidersHorizontal, Package, ChevronDown, X, Heart } from 'lucide-react';
 import api, { BACKEND_URL } from '../api/axios';
+import { hexToColorName } from '../utils/colorUtils';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ProductModal from '../components/ProductModal';
@@ -86,7 +87,7 @@ export default function Home() {
         if (e) triggerFlyAnimation(e);
         
         const cartKey = variant != null ? `${product.id}_v${variantIdx}` : String(product.id);
-        const variantLabel = variant ? [variant.color, variant.size].filter(Boolean).join(' / ') : null;
+        const variantLabel = variant ? [(variant.colorName || hexToColorName(variant.color) || variant.color), variant.size].filter(Boolean).join(' / ') : null;
         try {
             const cart = JSON.parse(localStorage.getItem('cart') ?? '[]');
             const existing = cart.find(x => x.id === cartKey);
@@ -96,6 +97,7 @@ export default function Home() {
                     productId: product.id,
                     name: product.name,
                     basePrice: product.basePrice,
+                    discountPercent: product.discountPercent ?? 0,
                     image: product.images?.[0] ?? null,
                     quantity: 1,
                     ...(variantLabel ? { variantLabel } : {}),
@@ -322,14 +324,14 @@ export default function Home() {
                                         <div className="product-card__footer">
                                             {p.variants?.length > 0 && (
                                                 <div className="product-card__variants">
-                                                    {p.variants.slice(0, 4).map(v => v.color).filter(Boolean)
-                                                        .filter((c, idx, arr) => arr.indexOf(c) === idx)
-                                                        .map(color => (
+                                                    {p.variants.slice(0, 4).filter(v => v.color)
+                                                        .filter((v, idx, arr) => arr.findIndex(x => x.color === v.color) === idx)
+                                                        .map(v => (
                                                             <span
-                                                                key={color}
+                                                                key={v.color}
                                                                 className="product-card__color-dot"
-                                                                title={color}
-                                                                style={{ background: color.toLowerCase() }}
+                                                                title={v.colorName || v.color}
+                                                                style={{ background: v.color.toLowerCase() }}
                                                             />
                                                         ))}
                                                 </div>

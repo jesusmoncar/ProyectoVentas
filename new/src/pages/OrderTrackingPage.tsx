@@ -3,6 +3,7 @@ import { FiSearch, FiPackage, FiTruck, FiCheckCircle, FiClock, FiMapPin } from '
 import api, { formatAddress } from '../api/api';
 import type { Order } from '../types';
 import toast from 'react-hot-toast';
+import { formatVariantLabel } from '../utils/colorUtils';
 
 const statusSteps = [
   { key: 'PENDING', label: 'Pendiente', icon: FiClock },
@@ -126,7 +127,7 @@ export default function OrderTrackingPage() {
                       <li key={item.id || idx} className="tracking__item">
                         <div>
                           <strong>{productName}</strong>
-                          <span>{item.variantLabel || 'Estándar'} — x{item.quantity}</span>
+                          <span>{formatVariantLabel(item.variantLabel ?? '') || 'Estándar'} — x{item.quantity}</span>
                         </div>
                         <span>€{(price * item.quantity).toFixed(2)}</span>
                       </li>

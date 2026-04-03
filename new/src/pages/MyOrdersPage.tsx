@@ -49,9 +49,15 @@ export default function MyOrdersPage() {
   const getStatusLabel = (status: string) => {
     switch(status) {
       case 'PENDING': return { text: 'Pendiente', class: 'status--pending' };
+      case 'PAID': return { text: 'Pagado', class: 'status--processing' };
+      case 'RESERVED': return { text: 'Reservado', class: 'status--pending' };
       case 'PROCESSING': return { text: 'Procesando', class: 'status--processing' };
       case 'SHIPPED': return { text: 'Enviado', class: 'status--shipped' };
       case 'DELIVERED': return { text: 'Entregado', class: 'status--delivered' };
+      case 'RETURN_REQUESTED': return { text: 'Devolución solicitada', class: 'status--pending' };
+      case 'RETURNED': return { text: 'Devuelto', class: 'status--delivered' };
+      case 'RETURN_REJECTED': return { text: 'Devolución rechazada', class: 'status--pending' };
+      case 'CANCELLED': return { text: 'Cancelado', class: '' };
       default: return { text: status, class: '' };
     }
   };

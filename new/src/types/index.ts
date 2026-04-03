@@ -42,6 +42,7 @@ export interface ProductVariant {
   id: number;
   sku: string;
   color: string;
+  colorName?: string | null;
   size: string;
   stock: number;
   priceOverride: number | null;

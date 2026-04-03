@@ -14,6 +14,7 @@ public class ProductRequest {
     @Data
     public static class VariantRequest {
         private String color;
+        private String colorName;
         private String size;
         private Integer stock;
         private Double priceOverride;

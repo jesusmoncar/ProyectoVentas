@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { getImageUrl } from '../api/api';
 import api from '../api/api';
 import toast from 'react-hot-toast';
+import { hexToColorName } from '../utils/colorUtils';
 import type { OrderRequest, ShippingAddress } from '../types';
 import CheckoutForm from '../components/CheckoutForm';
 import AddressForm from '../components/AddressForm';
@@ -48,7 +49,7 @@ export default function CheckoutPage() {
     items: items.map(item => ({
       productId: item.product.id,
       quantity: item.quantity,
-      variantLabel: `${item.variant.color} - ${item.variant.size}`
+      variantLabel: `${item.variant.colorName || hexToColorName(item.variant.color) || item.variant.color} - ${item.variant.size}`
     }))
   };
 
@@ -105,7 +106,7 @@ export default function CheckoutPage() {
           </div>
           <h1>¡Pedido Confirmado!</h1>
           <p>Tu número de seguimiento es:</p>
-          <span className="checkout__order-number">pedido prueba</span>
+          <span className="checkout__order-number">#{orderNumber}</span>
           <p className="checkout__success-text">
             {deliveryMode === 'PICKUP' 
               ? 'Has elegido recoger tu pedido en tienda. Tienes 48 horas para pasar a recogerlo y abonarlo antes de que se cancele automáticamente la reserva.'
@@ -239,7 +240,9 @@ export default function CheckoutPage() {
           <ul className="checkout__items">
             {items.map(item => {
               const imageUrl = getImageUrl(item.product.images?.[0], item.product.id);
-              const price = item.variant.priceOverride ?? item.product.basePrice;
+              const basePrice = item.variant.priceOverride ?? item.product.basePrice;
+              const discount = item.product.discountPercent ?? 0;
+              const price = basePrice * (1 - discount / 100);
               return (
                 <li key={`${item.product.id}-${item.variant.id}`} className="checkout__item">
                   <div className="checkout__item-image">
@@ -247,7 +250,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="checkout__item-info">
                     <h4>{item.product.name}</h4>
-                    <span>{item.variant.color} — {item.variant.size}</span>
+                    <span>{item.variant.colorName || item.variant.color} — {item.variant.size}</span>
                     <span>Cantidad: {item.quantity}</span>
                   </div>
                   <span className="checkout__item-price">€{(price * item.quantity).toFixed(2)}</span>

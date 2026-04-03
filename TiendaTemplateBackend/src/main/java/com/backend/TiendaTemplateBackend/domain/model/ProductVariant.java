@@ -13,6 +13,7 @@ public class ProductVariant {
     private Long id;
     private String sku; //Ej: CAM-AZUL-L
     private String color; //Atributo especifico
+    private String colorName;
     private String size; //atributo talla especifico
     private Integer stock; //stock de la combinacion especifica
     private Double priceOverride; //Por si una combinacion es mas cara que otra

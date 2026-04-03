@@ -163,7 +163,9 @@ export default function ProductModal({ product, gradientIndex = 0, onClose, onAd
                             {availableColors.length > 0 && (
                                 <div className="pm-option-group">
                                     <p className="pm-section__label">
-                                        Color: <span style={{ color: '#111827', fontWeight: 600, textTransform: 'capitalize' }}>{selectedColor}</span>
+                                        Color: <span style={{ color: '#111827', fontWeight: 600, textTransform: 'capitalize' }}>
+                                            {variants.find(v => v.color === selectedColor)?.colorName || selectedColor}
+                                        </span>
                                     </p>
                                     <div className="pm-color-list">
                                         {availableColors.map(color => {
